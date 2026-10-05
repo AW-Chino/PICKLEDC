@@ -698,27 +698,22 @@ button:disabled{cursor:default}
 
       var q = document.createElement("div"); q.className = "btn-row";
       if(t.step === "winnerChoice"){
+        // Only two choices: serve, or court. Whoever takes the court receives; the other team serves at 0-0-2.
         sh.appendChild(h3(tName(w) + " chooses"));
-        q.appendChild(tossBtn("Serve first", "primary", function(){ t.serve = w; t.chose = "serve"; t.step = "loserEnd"; renderToss(); }));
-        q.appendChild(tossBtn("Receive first", "", function(){ t.serve = l; t.chose = "receive"; t.step = "loserEnd"; renderToss(); }));
-        q.appendChild(tossBtn("Pick the court end", "", function(){ t.chose = "end"; t.step = "winnerEnd"; renderToss(); }));
-      }else if(t.step === "loserEnd" || t.step === "winnerEnd"){
-        var who = t.step === "loserEnd" ? l : w;
-        sh.appendChild(h3(tName(who) + " picks the end"));
-        sh.appendChild(para(["Where does " + tName(who) + " start, seen from your spot at the net post?"]));
-        q.appendChild(tossBtn(tName(who) + " on my left", "primary", function(){ t.left = who; t.step = t.step === "loserEnd" ? "done" : "loserServe"; renderToss(); }));
-        q.appendChild(tossBtn(tName(who) + " on my right", "", function(){ t.left = other(who); t.step = t.step === "loserEnd" ? "done" : "loserServe"; renderToss(); }));
-      }else if(t.step === "loserServe"){
-        sh.appendChild(h3(tName(l) + " chooses"));
-        q.appendChild(tossBtn("Serve first", "primary", function(){ t.serve = l; t.step = "done"; renderToss(); }));
-        q.appendChild(tossBtn("Receive first", "", function(){ t.serve = w; t.step = "done"; renderToss(); }));
+        q.appendChild(tossBtn("Serve", "primary", function(){ t.serve = w; t.chose = "serve"; t.step = "pickEnd"; renderToss(); }));
+        q.appendChild(tossBtn("Court", "", function(){ t.serve = l; t.chose = "court"; t.step = "pickEnd"; renderToss(); }));
+      }else if(t.step === "pickEnd"){
+        var who = other(t.serve);
+        sh.appendChild(h3(tName(who) + " picks the court"));
+        sh.appendChild(para([tName(who) + " receives. " + tName(t.serve) + " serves first. Where does " + tName(who) + " start, seen from your spot at the net post?"]));
+        q.appendChild(tossBtn(tName(who) + " on my left", "primary", function(){ t.left = who; t.step = "done"; renderToss(); }));
+        q.appendChild(tossBtn(tName(who) + " on my right", "", function(){ t.left = other(who); t.step = "done"; renderToss(); }));
       }else if(t.step === "done"){
         sh.appendChild(h3("Ready"));
-        sh.appendChild(para([b(tName(t.serve) + " serves first."), " " + tName(t.left) + " starts on your left, " + tName(other(t.left)) + " on your right."]));
+        sh.appendChild(para([b(tName(t.serve) + " serves first (0 – 0 – 2)."), " " + tName(other(t.serve)) + " receives. " + tName(t.left) + " starts on your left, " + tName(other(t.left)) + " on your right."]));
         q.appendChild(tossBtn("Use this", "primary", function(){
-          setRadio("serveTeam", t.serve); setRadio("leftTeam", t.left);
-          var how = t.chose === "end" ? "picked the end" : "chose to " + t.chose;
-          $("tossResult").textContent = "Toss: " + callerName + " called " + (right ? "right" : "wrong") + ". " + tName(w) + " won and " + how + ". " + tName(t.serve) + " serves, " + tName(t.left) + " on your left. Now set each team's baseline player.";
+          setRadio("serveTeam", t.serve); setRadio("leftTeam", t.left); setRadio("firstServe", "2");
+          $("tossResult").textContent = "Toss: " + callerName + " called " + (right ? "right" : "wrong") + ". " + tName(w) + " won and chose " + t.chose + ". " + tName(t.serve) + " serves, " + tName(t.left) + " on your left. Now set each team's baseline player.";
           toss = null; renderToss(); toast("Toss applied");
         }));
       }
