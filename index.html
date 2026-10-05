@@ -90,6 +90,8 @@ button:disabled{cursor:default}
 .stepper button{width:46px;border:0;background:var(--surface-2);font-size:22px;font-weight:600}
 .stepper input{flex:1;min-width:0;width:100%;border:0;background:transparent;color:var(--fg);text-align:center;font-family:var(--font-display);font-size:24px;font-weight:700;padding:6px 0;-moz-appearance:textfield}
 .stepper input::-webkit-outer-spin-button,.stepper input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+.presets{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.presets button{min-height:40px;border:1px solid var(--line);border-radius:9px;background:var(--surface-2);font-weight:600;font-size:14px}
 .err{color:var(--danger);font-weight:600;margin:0}
 .start-btn{min-height:58px;font-size:18px;font-family:var(--font-display);text-transform:uppercase;letter-spacing:.06em;font-weight:700}
 
@@ -214,10 +216,10 @@ button:disabled{cursor:default}
   </header>
   <form class="setup" id="setupForm" novalidate>
     <div class="card team-card t-0">
-      <h2>Team A</h2>
+      <h2>Team A <span>Player 1 starts on the right</span></h2>
       <div class="grid2">
         <div class="field">
-          <label for="t1a">Player 1</label>
+          <label for="t1a">Player 1 (Baseline)</label>
           <input type="text" id="t1a" autocomplete="off" autocapitalize="words" placeholder="e.g. Santos">
         </div>
         <div class="field">
@@ -225,19 +227,12 @@ button:disabled{cursor:default}
           <input type="text" id="t1b" autocomplete="off" autocapitalize="words" placeholder="e.g. Reyes">
         </div>
       </div>
-      <fieldset class="seg">
-        <legend>Baseline, starts on the right</legend>
-        <div class="opts">
-          <label><input type="radio" name="baseA" id="bA0" value="0" checked><span data-name="t1a">Player 1</span></label>
-          <label><input type="radio" name="baseA" id="bA1" value="1"><span data-name="t1b">Player 2</span></label>
-        </div>
-      </fieldset>
     </div>
     <div class="card team-card t-1">
-      <h2>Team B</h2>
+      <h2>Team B <span>Player 1 starts on the right</span></h2>
       <div class="grid2">
         <div class="field">
-          <label for="t2a">Player 1</label>
+          <label for="t2a">Player 1 (Baseline)</label>
           <input type="text" id="t2a" autocomplete="off" autocapitalize="words" placeholder="e.g. Garcia">
         </div>
         <div class="field">
@@ -245,13 +240,6 @@ button:disabled{cursor:default}
           <input type="text" id="t2b" autocomplete="off" autocapitalize="words" placeholder="e.g. Lim">
         </div>
       </div>
-      <fieldset class="seg">
-        <legend>Baseline, starts on the right</legend>
-        <div class="opts">
-          <label><input type="radio" name="baseB" id="bB0" value="0" checked><span data-name="t2a">Player 1</span></label>
-          <label><input type="radio" name="baseB" id="bB1" value="1"><span data-name="t2b">Player 2</span></label>
-        </div>
-      </fieldset>
     </div>
 
     <div class="card">
@@ -283,14 +271,17 @@ button:disabled{cursor:default}
           <label><input type="radio" name="target" id="tg21" value="21"><span>21</span></label>
         </div>
       </fieldset>
-      <fieldset class="seg">
-        <legend>Time limit</legend>
-        <div class="opts">
-          <label><input type="radio" name="timeLimit" id="tl0" value="0" checked><span>No limit</span></label>
-          <label><input type="radio" name="timeLimit" id="tl15" value="15"><span>15 min</span></label>
-          <label><input type="radio" name="timeLimit" id="tl21" value="21"><span>21 min</span></label>
+      <div class="field">
+        <label for="timeLimit">Time limit (minutes)</label>
+        <div class="stepper"><button type="button" data-step="timeLimit" data-d="-1" aria-label="Less time">−</button><input type="number" id="timeLimit" inputmode="numeric" min="0" max="60" value="11"><button type="button" data-step="timeLimit" data-d="1" aria-label="More time">+</button></div>
+        <div class="presets">
+          <button type="button" data-preset="0">No limit</button>
+          <button type="button" data-preset="11">11</button>
+          <button type="button" data-preset="15">15</button>
+          <button type="button" data-preset="21">21</button>
         </div>
-      </fieldset>
+        <p class="hint">0 = no limit, the clock counts up.</p>
+      </div>
       <div class="field">
         <label for="switchAt">Switch ends at</label>
         <div class="stepper"><button type="button" data-step="switchAt" data-d="-1" aria-label="Lower">−</button><input type="number" id="switchAt" inputmode="numeric" min="0" value="6"><button type="button" data-step="switchAt" data-d="1" aria-label="Raise">+</button></div>
@@ -444,7 +435,7 @@ button:disabled{cursor:default}
     set: function(k, v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} },
     del: function(k){ try{ localStorage.removeItem(k); }catch(e){} }
   };
-  var DEF_SWITCH = {11:6, 15:8, 21:11}, TIMEOUTS = 1;
+  var DEF_SWITCH = {11:6, 15:8, 21:11}, TIMEOUTS = 1, DEF_TIME = 11;
   var TO_MS = 60000, LOCK_MS = 120000;
 
   var G = null;          // current game, persisted on every change
@@ -540,31 +531,20 @@ button:disabled{cursor:default}
   function setupNames(){
     return {A:[$("t1a").value.trim(), $("t1b").value.trim()], B:[$("t2a").value.trim(), $("t2b").value.trim()]};
   }
-  // Show the typed names on the baseline buttons.
-  function syncNameChips(){
-    document.querySelectorAll("[data-name]").forEach(function(s){
-      var v = $(s.getAttribute("data-name")).value.trim();
-      s.textContent = v || (/b$/.test(s.getAttribute("data-name")) ? "Player 2" : "Player 1");
-    });
-  }
-  ["t1a","t1b","t2a","t2b"].forEach(function(id){ $(id).addEventListener("input", syncNameChips); });
-
   function loadSetup(){
     var c = store.get(K_SETUP, null);
     $("setupErr").hidden = true;
     if(c){
       $("t1a").value = c.A[0] || ""; $("t1b").value = c.A[1] || "";
       $("t2a").value = c.B[0] || ""; $("t2b").value = c.B[1] || "";
-      setRadio("baseA", c.baseA || 0); setRadio("baseB", c.baseB || 0);
       setRadio("target", c.target || 11);
       $("switchAt").value = c.switchAt != null ? c.switchAt : DEF_SWITCH[c.target || 11];
-      setRadio("timeLimit", c.timeLimitMin || 0);
       setRadio("firstServe", c.startAt2 === false ? "1" : "2");
     }
-    // Serve and sides are decided fresh for each game.
+    // Time limit, serve and sides start fresh for each game.
+    $("timeLimit").value = DEF_TIME;
     setRadio("serveTeam", "A"); setRadio("leftTeam", "A");
     $("tossResult").textContent = "The toss picks a random player to call it. You can also set these by hand.";
-    syncNameChips();
   }
 
   document.querySelectorAll('input[name="target"]').forEach(function(r){
@@ -579,6 +559,9 @@ button:disabled{cursor:default}
       var max = inp.id === "switchAt" ? toInt(radio("target"), 11) - 1 : toInt(inp.max, 99);
       inp.value = clamp(toInt(inp.value, 0) + toInt(b.getAttribute("data-d"), 0), 0, max);
     });
+  });
+  document.querySelectorAll("[data-preset]").forEach(function(b){
+    b.addEventListener("click", function(){ $("timeLimit").value = b.getAttribute("data-preset"); });
   });
 
   function missingNames(n){
@@ -597,17 +580,15 @@ button:disabled{cursor:default}
     var target = toInt(radio("target"), 11);
     var raw = {
       A: n.A, B: n.B,
-      baseA: toInt(radio("baseA"), 0), baseB: toInt(radio("baseB"), 0),
       target: target,
       switchAt: clamp(toInt($("switchAt").value, DEF_SWITCH[target]), 0, target - 1),
-      timeLimitMin: toInt(radio("timeLimit"), 0),
+      timeLimitMin: clamp(toInt($("timeLimit").value, DEF_TIME), 0, 60),
       startAt2: radio("firstServe") !== "1"
     };
     store.set(K_SETUP, raw);
-    // The game engine treats team 0 as the first-serving team and player 0 as each team's baseline.
+    // The game engine treats team 0 as the first-serving team. Player 1 (index 0) is always the baseline.
     var serveA = radio("serveTeam") !== "B", leftA = radio("leftTeam") !== "B";
-    function team(key, base){ var p = n[key]; return [p[base], p[1 - base]]; }
-    var A = team("A", raw.baseA), B = team("B", raw.baseB);
+    var A = n.A, B = n.B;
     var cfg = {
       players: serveA ? [A, B] : [B, A],
       names: serveA ? ["Team A", "Team B"] : ["Team B", "Team A"],
@@ -713,7 +694,7 @@ button:disabled{cursor:default}
         sh.appendChild(para([b(tName(t.serve) + " serves first (0 – 0 – 2)."), " " + tName(other(t.serve)) + " receives. " + tName(t.left) + " starts on your left, " + tName(other(t.left)) + " on your right."]));
         q.appendChild(tossBtn("Use this", "primary", function(){
           setRadio("serveTeam", t.serve); setRadio("leftTeam", t.left); setRadio("firstServe", "2");
-          $("tossResult").textContent = "Toss: " + callerName + " called " + (right ? "right" : "wrong") + ". " + tName(w) + " won and chose " + t.chose + ". " + tName(t.serve) + " serves, " + tName(t.left) + " on your left. Now set each team's baseline player.";
+          $("tossResult").textContent = "Toss: " + callerName + " called " + (right ? "right" : "wrong") + ". " + tName(w) + " won and chose " + t.chose + ". " + tName(t.serve) + " serves, " + tName(t.left) + " on your left.";
           toss = null; renderToss(); toast("Toss applied");
         }));
       }
