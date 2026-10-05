@@ -173,6 +173,12 @@ button:disabled{cursor:default}
 .final .nm{font-weight:600;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .final .sc{font-family:var(--font-display);font-size:34px;font-weight:700;font-variant-numeric:tabular-nums}
 .final .win{color:var(--fg)} .final .lose{color:var(--muted)}
+.toss-btn{border-color:var(--fg);font-weight:700}
+.toss-sheet{border-top:6px solid var(--team);max-height:calc(100% - 8px);overflow-y:auto}
+.toss-sheet p b{color:var(--fg)}
+.toss-tokens{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.toss-token{min-height:120px;font-family:var(--font-display);font-size:64px;font-weight:700;border:2px solid var(--line);background:var(--bg)}
+.toss-reveal{background:var(--surface-2);border-radius:10px;padding:10px 12px;display:flex;flex-direction:column;gap:4px}
 .toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:30;background:var(--fg);color:var(--bg);padding:10px 16px;border-radius:999px;font-weight:600;font-size:14px}
 
 /* ---------- results ---------- */
@@ -208,28 +214,64 @@ button:disabled{cursor:default}
   </header>
   <form class="setup" id="setupForm" novalidate>
     <div class="card team-card t-0">
-      <h2>Team 1 <span>serves first</span></h2>
-      <div class="field">
-        <label for="t1a">Baseline player <span class="tag-base">FIRST SERVER</span></label>
-        <input type="text" id="t1a" autocomplete="off" autocapitalize="words" placeholder="e.g. Santos">
-        <p class="hint">Starts on the right. On the right whenever Team 1's score is even.</p>
+      <h2>Team A</h2>
+      <div class="grid2">
+        <div class="field">
+          <label for="t1a">Player 1</label>
+          <input type="text" id="t1a" autocomplete="off" autocapitalize="words" placeholder="e.g. Santos">
+        </div>
+        <div class="field">
+          <label for="t1b">Player 2</label>
+          <input type="text" id="t1b" autocomplete="off" autocapitalize="words" placeholder="e.g. Reyes">
+        </div>
       </div>
-      <div class="field">
-        <label for="t1b">Partner</label>
-        <input type="text" id="t1b" autocomplete="off" autocapitalize="words" placeholder="e.g. Reyes">
-      </div>
+      <fieldset class="seg">
+        <legend>Baseline, starts on the right</legend>
+        <div class="opts">
+          <label><input type="radio" name="baseA" id="bA0" value="0" checked><span data-name="t1a">Player 1</span></label>
+          <label><input type="radio" name="baseA" id="bA1" value="1"><span data-name="t1b">Player 2</span></label>
+        </div>
+      </fieldset>
     </div>
     <div class="card team-card t-1">
-      <h2>Team 2 <span>receives first</span></h2>
-      <div class="field">
-        <label for="t2a">Baseline player <span class="tag-base">FIRST RECEIVER</span></label>
-        <input type="text" id="t2a" autocomplete="off" autocapitalize="words" placeholder="e.g. Garcia">
-        <p class="hint">Starts on the right. On the right whenever Team 2's score is even.</p>
+      <h2>Team B</h2>
+      <div class="grid2">
+        <div class="field">
+          <label for="t2a">Player 1</label>
+          <input type="text" id="t2a" autocomplete="off" autocapitalize="words" placeholder="e.g. Garcia">
+        </div>
+        <div class="field">
+          <label for="t2b">Player 2</label>
+          <input type="text" id="t2b" autocomplete="off" autocapitalize="words" placeholder="e.g. Lim">
+        </div>
       </div>
-      <div class="field">
-        <label for="t2b">Partner</label>
-        <input type="text" id="t2b" autocomplete="off" autocapitalize="words" placeholder="e.g. Lim">
-      </div>
+      <fieldset class="seg">
+        <legend>Baseline, starts on the right</legend>
+        <div class="opts">
+          <label><input type="radio" name="baseB" id="bB0" value="0" checked><span data-name="t2a">Player 1</span></label>
+          <label><input type="radio" name="baseB" id="bB1" value="1"><span data-name="t2b">Player 2</span></label>
+        </div>
+      </fieldset>
+    </div>
+
+    <div class="card">
+      <h2>Serve &amp; sides</h2>
+      <button type="button" class="btn toss-btn" id="btnToss">Run coin toss</button>
+      <p class="hint" id="tossResult">The toss picks a random player to call it. You can also set these by hand.</p>
+      <fieldset class="seg">
+        <legend>Serves first</legend>
+        <div class="opts">
+          <label><input type="radio" name="serveTeam" id="svA" value="A" checked><span>Team A</span></label>
+          <label><input type="radio" name="serveTeam" id="svB" value="B"><span>Team B</span></label>
+        </div>
+      </fieldset>
+      <fieldset class="seg">
+        <legend>On my left, from the net post</legend>
+        <div class="opts">
+          <label><input type="radio" name="leftTeam" id="lfA" value="A" checked><span>Team A</span></label>
+          <label><input type="radio" name="leftTeam" id="lfB" value="B"><span>Team B</span></label>
+        </div>
+      </fieldset>
     </div>
 
     <div class="card">
@@ -241,22 +283,19 @@ button:disabled{cursor:default}
           <label><input type="radio" name="target" id="tg21" value="21"><span>21</span></label>
         </div>
       </fieldset>
-      <div class="grid2">
-        <div class="field">
-          <label for="switchAt">Switch ends at</label>
-          <div class="stepper"><button type="button" data-step="switchAt" data-d="-1" aria-label="Lower">−</button><input type="number" id="switchAt" inputmode="numeric" min="0" value="6"><button type="button" data-step="switchAt" data-d="1" aria-label="Raise">+</button></div>
-          <p class="hint">First team to reach it. 0 = off.</p>
+      <fieldset class="seg">
+        <legend>Time limit</legend>
+        <div class="opts">
+          <label><input type="radio" name="timeLimit" id="tl0" value="0" checked><span>No limit</span></label>
+          <label><input type="radio" name="timeLimit" id="tl15" value="15"><span>15 min</span></label>
+          <label><input type="radio" name="timeLimit" id="tl21" value="21"><span>21 min</span></label>
         </div>
-        <div class="field">
-          <label for="timeLimit">Time limit (min)</label>
-          <div class="stepper"><button type="button" data-step="timeLimit" data-d="-1" aria-label="Less time">−</button><input type="number" id="timeLimit" inputmode="numeric" min="0" max="120" value="0"><button type="button" data-step="timeLimit" data-d="1" aria-label="More time">+</button></div>
-          <p class="hint">0 = no limit, clock counts up.</p>
-        </div>
+      </fieldset>
+      <div class="field">
+        <label for="switchAt">Switch ends at</label>
+        <div class="stepper"><button type="button" data-step="switchAt" data-d="-1" aria-label="Lower">−</button><input type="number" id="switchAt" inputmode="numeric" min="0" value="6"><button type="button" data-step="switchAt" data-d="1" aria-label="Raise">+</button></div>
+        <p class="hint">First team to reach it switches ends. 0 = off.</p>
       </div>
-      <p class="hint">Each team gets one 1-minute timeout. With a time limit, timeouts lock under 2:00.</p>
-    </div>
-
-    <div class="card">
       <fieldset class="seg">
         <legend>First serve</legend>
         <div class="opts">
@@ -264,13 +303,7 @@ button:disabled{cursor:default}
           <label><input type="radio" name="firstServe" id="fs1" value="1"><span>0 – 0 – 1</span></label>
         </div>
       </fieldset>
-      <fieldset class="seg">
-        <legend>From your spot at the net post</legend>
-        <div class="opts">
-          <label><input type="radio" name="view" id="vwL" value="left" checked><span>Team 1 on my left</span></label>
-          <label><input type="radio" name="view" id="vwR" value="right"><span>Team 1 on my right</span></label>
-        </div>
-      </fieldset>
+      <p class="hint">Each team gets one 1-minute timeout. With a time limit, timeouts lock under 2:00.</p>
     </div>
 
     <p class="err" id="setupErr" hidden></p>
@@ -387,6 +420,10 @@ button:disabled{cursor:default}
   </div>
 </div>
 
+<div class="overlay" id="ovToss" hidden>
+  <div class="sheet toss-sheet" id="tossSheet"></div>
+</div>
+
 <div class="overlay" id="modal" hidden>
   <div class="sheet">
     <h3 id="mTitle"></h3>
@@ -401,7 +438,7 @@ button:disabled{cursor:default}
 (function(){
   "use strict";
   var $ = function(id){ return document.getElementById(id); };
-  var K_CFG = "pbu.config", K_GAME = "pbu.game", K_RES = "pbu.results";
+  var K_SETUP = "pbu.setup", K_GAME = "pbu.game", K_RES = "pbu.results";
   var store = {
     get: function(k, d){ try{ var v = localStorage.getItem(k); return v ? JSON.parse(v) : d; }catch(e){ return d; } },
     set: function(k, v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} },
@@ -500,18 +537,34 @@ button:disabled{cursor:default}
   function radio(name){ var r = document.querySelector('input[name="' + name + '"]:checked'); return r ? r.value : null; }
   function setRadio(name, val){ var r = document.querySelector('input[name="' + name + '"][value="' + val + '"]'); if(r) r.checked = true; }
 
+  function setupNames(){
+    return {A:[$("t1a").value.trim(), $("t1b").value.trim()], B:[$("t2a").value.trim(), $("t2b").value.trim()]};
+  }
+  // Show the typed names on the baseline buttons.
+  function syncNameChips(){
+    document.querySelectorAll("[data-name]").forEach(function(s){
+      var v = $(s.getAttribute("data-name")).value.trim();
+      s.textContent = v || (/b$/.test(s.getAttribute("data-name")) ? "Player 2" : "Player 1");
+    });
+  }
+  ["t1a","t1b","t2a","t2b"].forEach(function(id){ $(id).addEventListener("input", syncNameChips); });
+
   function loadSetup(){
-    var c = store.get(K_CFG, null);
+    var c = store.get(K_SETUP, null);
     $("setupErr").hidden = true;
-    if(!c) return;
-    var p = c.players || [["",""],["",""]];
-    $("t1a").value = p[0][0] || ""; $("t1b").value = p[0][1] || "";
-    $("t2a").value = p[1][0] || ""; $("t2b").value = p[1][1] || "";
-    setRadio("target", c.target || 11);
-    $("switchAt").value = c.switchAt != null ? c.switchAt : DEF_SWITCH[c.target || 11];
-    $("timeLimit").value = c.timeLimitMin || 0;
-    setRadio("firstServe", c.startAt2 === false ? "1" : "2");
-    setRadio("view", c.team1Left === false ? "right" : "left");
+    if(c){
+      $("t1a").value = c.A[0] || ""; $("t1b").value = c.A[1] || "";
+      $("t2a").value = c.B[0] || ""; $("t2b").value = c.B[1] || "";
+      setRadio("baseA", c.baseA || 0); setRadio("baseB", c.baseB || 0);
+      setRadio("target", c.target || 11);
+      $("switchAt").value = c.switchAt != null ? c.switchAt : DEF_SWITCH[c.target || 11];
+      setRadio("timeLimit", c.timeLimitMin || 0);
+      setRadio("firstServe", c.startAt2 === false ? "1" : "2");
+    }
+    // Serve and sides are decided fresh for each game.
+    setRadio("serveTeam", "A"); setRadio("leftTeam", "A");
+    $("tossResult").textContent = "The toss picks a random player to call it. You can also set these by hand.";
+    syncNameChips();
   }
 
   document.querySelectorAll('input[name="target"]').forEach(function(r){
@@ -528,28 +581,152 @@ button:disabled{cursor:default}
     });
   });
 
+  function missingNames(n){
+    var m = [];
+    if(!n.A[0]) m.push("Team A player 1"); if(!n.A[1]) m.push("Team A player 2");
+    if(!n.B[0]) m.push("Team B player 1"); if(!n.B[1]) m.push("Team B player 2");
+    if(m.length){ $("setupErr").textContent = "Add a name for: " + m.join(", ") + "."; $("setupErr").hidden = false; }
+    else $("setupErr").hidden = true;
+    return m.length > 0;
+  }
+
   $("setupForm").addEventListener("submit", function(e){
     e.preventDefault();
-    var players = [[$("t1a").value.trim(), $("t1b").value.trim()], [$("t2a").value.trim(), $("t2b").value.trim()]];
-    var missing = [];
-    if(!players[0][0]) missing.push("Team 1 baseline"); if(!players[0][1]) missing.push("Team 1 partner");
-    if(!players[1][0]) missing.push("Team 2 baseline"); if(!players[1][1]) missing.push("Team 2 partner");
-    if(missing.length){ $("setupErr").textContent = "Add a name for: " + missing.join(", ") + "."; $("setupErr").hidden = false; return; }
+    var n = setupNames();
+    if(missingNames(n)) return;
     var target = toInt(radio("target"), 11);
-    var cfg = {
-      players: players,
+    var raw = {
+      A: n.A, B: n.B,
+      baseA: toInt(radio("baseA"), 0), baseB: toInt(radio("baseB"), 0),
       target: target,
       switchAt: clamp(toInt($("switchAt").value, DEF_SWITCH[target]), 0, target - 1),
-      timeouts: TIMEOUTS,
-      timeLimitMin: clamp(toInt($("timeLimit").value, 0), 0, 120),
-      startAt2: radio("firstServe") !== "1",
-      team1Left: radio("view") !== "right"
+      timeLimitMin: toInt(radio("timeLimit"), 0),
+      startAt2: radio("firstServe") !== "1"
     };
-    store.set(K_CFG, cfg);
+    store.set(K_SETUP, raw);
+    // The game engine treats team 0 as the first-serving team and player 0 as each team's baseline.
+    var serveA = radio("serveTeam") !== "B", leftA = radio("leftTeam") !== "B";
+    function team(key, base){ var p = n[key]; return [p[base], p[1 - base]]; }
+    var A = team("A", raw.baseA), B = team("B", raw.baseB);
+    var cfg = {
+      players: serveA ? [A, B] : [B, A],
+      names: serveA ? ["Team A", "Team B"] : ["Team B", "Team A"],
+      colors: serveA ? [0, 1] : [1, 0],
+      target: target,
+      switchAt: raw.switchAt,
+      timeouts: TIMEOUTS,
+      timeLimitMin: raw.timeLimitMin,
+      startAt2: raw.startAt2,
+      team1Left: serveA === leftA
+    };
     G = newGame(cfg);
     save();
     show("game");
   });
+
+  /* ---------- coin toss ---------- */
+  // One random player calls between two random tokens. Right call: their team wins the toss.
+  // The winner picks serve/receive or the end; the other team gets the remaining choice.
+  var toss = null;
+  function rnd(n){
+    try{ var a = new Uint32Array(1); crypto.getRandomValues(a); return a[0] % n; }
+    catch(e){ return Math.floor(Math.random() * n); }
+  }
+  function token(){
+    var L = "ABCDEFGHJKLMNPQRSTUVWXYZ", D = "123456789", k = rnd(3);
+    var l = L[rnd(L.length)], d = D[rnd(D.length)];
+    return k === 0 ? l : (k === 1 ? d : l + d);
+  }
+  function newToss(n){
+    var a = token(), b = token();
+    while(b === a) b = token();
+    var c = rnd(4);
+    return {step:"call", names:n, caller:{team: c < 2 ? "A" : "B", idx: c % 2}, tokens:[a, b], win: rnd(2)};
+  }
+  function other(k){ return k === "A" ? "B" : "A"; }
+  function tName(k){ return "Team " + k; }
+  function tPlayers(k){ return toss.names[k][0] + " & " + toss.names[k][1]; }
+
+  $("btnToss").addEventListener("click", function(){
+    var n = setupNames();
+    if(missingNames(n)) return;
+    toss = newToss(n);
+    renderToss();
+  });
+
+  function tossBtn(label, cls, fn){
+    var b = document.createElement("button");
+    b.type = "button"; b.className = "btn " + (cls || ""); b.textContent = label;
+    b.addEventListener("click", fn);
+    return b;
+  }
+  function para(parts){
+    var p = document.createElement("p");
+    parts.forEach(function(x){ p.appendChild(typeof x === "string" ? document.createTextNode(x) : x); });
+    return p;
+  }
+  function h3(text){ var h = document.createElement("h3"); h.textContent = text; return h; }
+
+  function renderToss(){
+    var sh = $("tossSheet"); sh.textContent = "";
+    if(!toss){ $("ovToss").hidden = true; return; }
+    var t = toss, callerName = t.names[t.caller.team][t.caller.idx];
+    sh.className = "sheet toss-sheet t-" + (t.caller.team === "A" ? 0 : 1);
+
+    if(t.step === "call"){
+      sh.appendChild(h3("Coin toss"));
+      sh.appendChild(para(["Caller: ", b(callerName), " (" + tName(t.caller.team) + "). Ask them to pick one, then tap their pick."]));
+      var row = document.createElement("div"); row.className = "toss-tokens";
+      t.tokens.forEach(function(tok, i){
+        row.appendChild(tossBtn(tok, "toss-token", function(){
+          t.pick = i;
+          t.winner = i === t.win ? t.caller.team : other(t.caller.team);
+          t.step = "winnerChoice"; renderToss();
+        }));
+      });
+      sh.appendChild(row);
+      var rr = document.createElement("div"); rr.className = "btn-row";
+      rr.appendChild(tossBtn("Pick a different caller", "", function(){ toss = newToss(t.names); renderToss(); }));
+      rr.appendChild(tossBtn("Cancel", "ghost", function(){ toss = null; renderToss(); }));
+      sh.appendChild(rr);
+    }else{
+      var right = t.pick === t.win, w = t.winner, l = other(w);
+      var res = document.createElement("div"); res.className = "toss-reveal";
+      res.appendChild(para([b(callerName), " picked " + t.tokens[t.pick] + ". The winning pick was " + t.tokens[t.win] + ". ", b(right ? "Correct." : "Wrong.")]));
+      res.appendChild(para([b(tName(w) + " wins the toss"), " (" + tPlayers(w) + ")."]));
+      sh.appendChild(res);
+
+      var q = document.createElement("div"); q.className = "btn-row";
+      if(t.step === "winnerChoice"){
+        sh.appendChild(h3(tName(w) + " chooses"));
+        q.appendChild(tossBtn("Serve first", "primary", function(){ t.serve = w; t.chose = "serve"; t.step = "loserEnd"; renderToss(); }));
+        q.appendChild(tossBtn("Receive first", "", function(){ t.serve = l; t.chose = "receive"; t.step = "loserEnd"; renderToss(); }));
+        q.appendChild(tossBtn("Pick the court end", "", function(){ t.chose = "end"; t.step = "winnerEnd"; renderToss(); }));
+      }else if(t.step === "loserEnd" || t.step === "winnerEnd"){
+        var who = t.step === "loserEnd" ? l : w;
+        sh.appendChild(h3(tName(who) + " picks the end"));
+        sh.appendChild(para(["Where does " + tName(who) + " start, seen from your spot at the net post?"]));
+        q.appendChild(tossBtn(tName(who) + " on my left", "primary", function(){ t.left = who; t.step = t.step === "loserEnd" ? "done" : "loserServe"; renderToss(); }));
+        q.appendChild(tossBtn(tName(who) + " on my right", "", function(){ t.left = other(who); t.step = t.step === "loserEnd" ? "done" : "loserServe"; renderToss(); }));
+      }else if(t.step === "loserServe"){
+        sh.appendChild(h3(tName(l) + " chooses"));
+        q.appendChild(tossBtn("Serve first", "primary", function(){ t.serve = l; t.step = "done"; renderToss(); }));
+        q.appendChild(tossBtn("Receive first", "", function(){ t.serve = w; t.step = "done"; renderToss(); }));
+      }else if(t.step === "done"){
+        sh.appendChild(h3("Ready"));
+        sh.appendChild(para([b(tName(t.serve) + " serves first."), " " + tName(t.left) + " starts on your left, " + tName(other(t.left)) + " on your right."]));
+        q.appendChild(tossBtn("Use this", "primary", function(){
+          setRadio("serveTeam", t.serve); setRadio("leftTeam", t.left);
+          var how = t.chose === "end" ? "picked the end" : "chose to " + t.chose;
+          $("tossResult").textContent = "Toss: " + callerName + " called " + (right ? "right" : "wrong") + ". " + tName(w) + " won and " + how + ". " + tName(t.serve) + " serves, " + tName(t.left) + " on your left. Now set each team's baseline player.";
+          toss = null; renderToss(); toast("Toss applied");
+        }));
+      }
+      q.appendChild(tossBtn("Start the toss over", "ghost", function(){ toss = newToss(t.names); renderToss(); }));
+      sh.appendChild(q);
+    }
+    $("ovToss").hidden = false;
+  }
 
   /* ================= GAME LOGIC ================= */
   function newGame(cfg){
@@ -568,7 +745,8 @@ button:disabled{cursor:default}
   }
   function save(){ if(G) store.set(K_GAME, G); }
   function name(t, i){ return G.cfg.players[t][i]; }
-  function teamLabel(t){ return "Team " + (t + 1); }
+  function teamLabel(t){ return G.cfg.names ? G.cfg.names[t] : "Team " + (t + 1); }
+  function col(t){ return G.cfg.colors ? G.cfg.colors[t] : t; }
 
   // A team's players only swap sides when that team scores, so the baseline
   // player (index 0) is in the right court whenever the team's score is even.
@@ -670,7 +848,8 @@ button:disabled{cursor:default}
     var winner = s.over !== null ? s.over : (s.score[0] === s.score[1] ? null : (s.score[0] > s.score[1] ? 0 : 1));
     var res = {
       id: G.id, date: G.createdAt, players: G.cfg.players, score: s.score.slice(), winner: winner,
-      target: G.cfg.target, durationMs: shownElapsed(), timeouts: G.to.used.slice(), complete: complete
+      target: G.cfg.target, durationMs: shownElapsed(), timeouts: G.to.used.slice(), complete: complete,
+      names: [teamLabel(0), teamLabel(1)], colors: [col(0), col(1)]
     };
     var list = store.get(K_RES, []);
     list = list.filter(function(r){ return r.id !== res.id; });
@@ -700,8 +879,7 @@ button:disabled{cursor:default}
         if(isServer) tags.push("S" + s.serverNum);
         if(isRecv) tags.push("REC");
         el.querySelector(".pl-tags").textContent = tags.join(" · ");
-        el.classList.toggle("is-server", isServer);
-        el.classList.toggle("is-receiver", isRecv);
+        el.className = "pl t-" + col(t) + (isServer ? " is-server" : "") + (isRecv ? " is-receiver" : "");
       }
     }
     var sp = pos(s.serving, s.server), rp = pos(1 - s.serving, rcv);
@@ -726,7 +904,8 @@ button:disabled{cursor:default}
     for(var k = 0; k < 2; k++){
       var panel = $("team" + k), serving = s.serving === k;
       panel.style.order = k === lt ? 0 : 1;
-      panel.classList.toggle("serving", serving && s.over === null);
+      panel.className = "team t-" + col(k) + (serving && s.over === null ? " serving" : "");
+      panel.querySelector(".team-name").textContent = teamLabel(k);
       panel.querySelector("[data-pill]").hidden = !serving || s.over !== null;
       panel.querySelector("[data-pill]").textContent = "Serving · S" + s.serverNum;
       panel.querySelector("[data-players]").textContent = name(k, 0) + " · " + name(k, 1);
@@ -775,7 +954,7 @@ button:disabled{cursor:default}
   }
   function b(text){ var e = document.createElement("b"); e.textContent = text; return e; }
   function setEnd(el, t){
-    el.className = "end t-" + t; el.textContent = "";
+    el.className = "end t-" + col(t); el.textContent = "";
     el.appendChild(document.createElement("i"));
     el.appendChild(document.createTextNode(teamLabel(t)));
   }
@@ -816,7 +995,7 @@ button:disabled{cursor:default}
     if(!a || screen !== "game"){ if(!ov.hidden) ov.hidden = true; return; }
     var rem = TO_MS - (now() - a.since);
     var sheet = $("toSheet");
-    sheet.className = "sheet to-sheet t-" + a.team + (rem <= 0 ? " done" : (rem <= 15000 ? " low" : ""));
+    sheet.className = "sheet to-sheet t-" + col(a.team) +(rem <= 0 ? " done" : (rem <= 15000 ? " low" : ""));
     $("toTitle").textContent = teamLabel(a.team) + " timeout";
     $("toClock").textContent = fmt(Math.max(0, rem), true);
     $("toSub").textContent = rem <= 0 ? "Time in. Call the players back." :
@@ -858,9 +1037,9 @@ button:disabled{cursor:default}
       card.appendChild(meta);
       [0, 1].forEach(function(t){
         var row = document.createElement("div");
-        row.className = "res-row t-" + t + (r.winner === t ? " win" : (r.winner === null ? "" : " lose"));
+        row.className = "res-row t-" + (r.colors ? r.colors[t] : t) + (r.winner === t ? " win" : (r.winner === null ? "" : " lose"));
         row.appendChild(document.createElement("i"));
-        row.appendChild(span(r.players[t][0] + " / " + r.players[t][1], "nm"));
+        row.appendChild(span((r.names ? r.names[t] + ": " : "") + r.players[t][0] + " / " + r.players[t][1], "nm"));
         row.appendChild(span(String(r.score[t]), "sc"));
         card.appendChild(row);
       });
