@@ -1,0 +1,954 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#3a7455">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="PB Umpire">
+<title>Pickleball Umpire</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: one-screen umpire console. Court drawn from the net post on top, the score call under it,
+   then two team panels that sit on the same side of the screen as their team on the court. */
+:root{
+  --bg:#edf1ee; --surface:#fbfcfb; --surface-2:#e2e9e4; --fg:#15201a; --muted:#56645c; --line:#cdd7d0;
+  --court:#2d5f8f; --court-k:#244f79; --court-out:#3a7455; --court-line:#f5f8f6; --net:#1b2a22;
+  --ball:#d9e84a; --t1:#0d8577; --t2:#c95a24; --t1-soft:#d9efeb; --t2-soft:#f7e3d7; --on-team:#ffffff;
+  --danger:#b3322a; --warn:#9a640e; --warn-soft:#f6ead2;
+  --font-display:"Barlow Condensed","Arial Narrow",system-ui,sans-serif;
+  --font-body:"Barlow",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --r:12px;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0e1411; --surface:#161e1a; --surface-2:#202a25; --fg:#e6eee9; --muted:#93a39a; --line:#2c3832;
+    --court:#22507c; --court-k:#1d4469; --court-out:#28553d; --court-line:#e6ede9; --net:#0b120e;
+    --ball:#d9e84a; --t1:#2fb5a5; --t2:#ef7f47; --t1-soft:#14362f; --t2-soft:#3d2418; --on-team:#08130f;
+    --danger:#ec5d50; --warn:#e3a842; --warn-soft:#3a2d14; color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0e1411; --surface:#161e1a; --surface-2:#202a25; --fg:#e6eee9; --muted:#93a39a; --line:#2c3832;
+  --court:#22507c; --court-k:#1d4469; --court-out:#28553d; --court-line:#e6ede9; --net:#0b120e;
+  --ball:#d9e84a; --t1:#2fb5a5; --t2:#ef7f47; --t1-soft:#14362f; --t2-soft:#3d2418; --on-team:#08130f;
+  --danger:#ec5d50; --warn:#e3a842; --warn-soft:#3a2d14; color-scheme:dark;
+}
+html,body{height:100%}
+:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+body{background:var(--bg);color:var(--fg);font-family:var(--font-body);font-size:15px;line-height:1.4;
+  padding-inline:16px;padding-block:0;-webkit-tap-highlight-color:transparent}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+button{font:inherit;color:inherit;touch-action:manipulation;cursor:pointer}
+button:disabled{cursor:default}
+:focus-visible{outline:3px solid var(--ball);outline-offset:2px}
+.screen{max-width:560px;margin-inline:auto;min-height:100%;display:flex;flex-direction:column}
+.t-0{--team:var(--t1);--team-soft:var(--t1-soft)}
+.t-1{--team:var(--t2);--team-soft:var(--t2-soft)}
+
+/* ---------- buttons ---------- */
+.btn{border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:12px 16px;font-weight:600;
+  min-height:48px;display:inline-flex;align-items:center;justify-content:center;gap:8px;text-align:center}
+.btn.primary{background:var(--fg);color:var(--bg);border-color:var(--fg)}
+.btn.danger{color:var(--danger);border-color:var(--danger)}
+.btn.ghost{background:transparent;border-color:transparent;color:var(--muted)}
+.btn:active:not(:disabled){transform:translateY(1px)}
+.btn-row{display:flex;flex-direction:column;gap:8px}
+
+/* ---------- setup ---------- */
+.app-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding-block:18px 10px}
+.brand{font-family:var(--font-display);font-weight:700;font-size:28px;letter-spacing:.01em;line-height:1;text-transform:uppercase}
+.brand small{display:block;font-family:var(--font-body);font-weight:500;font-size:13px;letter-spacing:.02em;text-transform:none;color:var(--muted);margin-top:4px}
+.setup{display:flex;flex-direction:column;gap:14px;padding-bottom:24px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:14px;display:flex;flex-direction:column;gap:12px}
+.card.team-card{border-left:5px solid var(--team)}
+.card h2{margin:0;font-family:var(--font-display);font-size:20px;font-weight:700;text-transform:uppercase;letter-spacing:.03em;display:flex;align-items:baseline;gap:8px}
+.card h2 span{font-family:var(--font-body);font-size:13px;font-weight:500;color:var(--muted);text-transform:none;letter-spacing:0}
+.field{display:flex;flex-direction:column;gap:6px;min-width:0}
+.field>label,.seg legend{font-size:12px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.field input[type=text]{width:100%;font:inherit;font-size:17px;padding:11px 12px;border:1px solid var(--line);border-radius:9px;background:var(--bg);color:var(--fg)}
+.hint{margin:0;font-size:13px;color:var(--muted)}
+.tag-base{display:inline-block;font-size:11px;font-weight:700;letter-spacing:.06em;padding:1px 6px;border-radius:5px;background:var(--team-soft);color:var(--fg);vertical-align:1px}
+.seg{border:0;margin:0;padding:0;display:flex;flex-direction:column;gap:6px;min-width:0}
+.seg .opts{display:flex;gap:6px;flex-wrap:wrap}
+.seg label{flex:1 1 0;min-width:72px}
+.seg input{position:absolute;opacity:0;pointer-events:none}
+.seg label span{display:flex;align-items:center;justify-content:center;min-height:46px;padding:6px 10px;border:1px solid var(--line);border-radius:9px;background:var(--bg);font-weight:600;text-align:center;font-size:15px}
+.seg input:checked+span{background:var(--fg);color:var(--bg);border-color:var(--fg)}
+.seg input:focus-visible+span{outline:3px solid var(--ball);outline-offset:2px}
+.big-seg label span{font-family:var(--font-display);font-size:24px;font-weight:700}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media (max-width:380px){.grid2{grid-template-columns:1fr}}
+.stepper{display:flex;align-items:stretch;border:1px solid var(--line);border-radius:9px;overflow:hidden;background:var(--bg)}
+.stepper button{width:46px;border:0;background:var(--surface-2);font-size:22px;font-weight:600}
+.stepper input{flex:1;min-width:0;width:100%;border:0;background:transparent;color:var(--fg);text-align:center;font-family:var(--font-display);font-size:24px;font-weight:700;padding:6px 0;-moz-appearance:textfield}
+.stepper input::-webkit-outer-spin-button,.stepper input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+.err{color:var(--danger);font-weight:600;margin:0}
+.start-btn{min-height:58px;font-size:18px;font-family:var(--font-display);text-transform:uppercase;letter-spacing:.06em;font-weight:700}
+
+/* ---------- game ---------- */
+#scrGame{gap:10px;padding-bottom:10px}
+.topbar{display:flex;align-items:center;gap:10px;padding-top:10px}
+.topbar .btn{min-height:44px;padding:8px 12px}
+.clock-wrap{flex:1;text-align:center;min-width:0}
+.clock{font-family:var(--font-display);font-weight:700;font-size:38px;line-height:1;font-variant-numeric:tabular-nums;letter-spacing:.02em}
+.clock-sub{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+.clock-wrap.warn .clock,.clock-wrap.warn .clock-sub{color:var(--warn)}
+.clock-wrap.danger .clock,.clock-wrap.danger .clock-sub{color:var(--danger)}
+.clock-btn{min-width:92px}
+.clock-btn.running{background:var(--surface-2)}
+
+.court-frame{background:var(--court-out);border-radius:var(--r);padding:12px 14px 6px}
+.court{position:relative;width:100%;max-width:100%;aspect-ratio:44/20}
+.court-svg{position:absolute;inset:0;width:100%;height:100%;display:block;overflow:visible}
+.c-play{fill:var(--court)} .c-kitchen{fill:var(--court-k)}
+.c-lines{stroke:var(--court-line);stroke-width:2.5;fill:none}
+.c-net{stroke:var(--net);stroke-width:5}
+.c-serve{stroke:var(--ball);stroke-width:2.5;stroke-dasharray:7 6;fill:none;transition:all .35s ease}
+.pl{position:absolute;transform:translate(-50%,-50%);max-width:31%;padding:4px 8px 3px;border-radius:8px;
+  background:var(--team);color:var(--on-team);text-align:center;transition:left .35s ease,top .35s ease;
+  box-shadow:0 1px 0 rgba(0,0,0,.25);line-height:1.1}
+.pl-name{display:block;font-family:var(--font-display);font-weight:700;font-size:17px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pl-tags{display:block;font-size:10px;font-weight:700;letter-spacing:.06em;white-space:nowrap;opacity:.92}
+.pl.is-server{outline:3px solid var(--ball);outline-offset:1px}
+.pl.is-server::before{content:"";position:absolute;top:-7px;right:-7px;width:13px;height:13px;border-radius:50%;background:var(--ball);box-shadow:0 0 0 2px var(--court)}
+.pl.is-receiver{outline:2px dashed var(--court-line);outline-offset:2px}
+.ends{display:flex;justify-content:space-between;align-items:center;gap:8px;padding-top:6px;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--court-line)}
+.ends .you{opacity:.85;font-weight:600}
+.ends .end{display:flex;align-items:center;gap:5px;min-width:0}
+.ends .end i{width:9px;height:9px;border-radius:2px;background:var(--team);flex:none}
+
+.call{text-align:center}
+.call-num{font-family:var(--font-display);font-weight:700;font-size:58px;line-height:.95;font-variant-numeric:tabular-nums;letter-spacing:.01em}
+.call-sub{font-size:14px;color:var(--muted)}
+.call-sub b{color:var(--fg)}
+
+.teams{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.team{background:var(--surface);border:1px solid var(--line);border-top:5px solid var(--team);border-radius:var(--r);padding:10px;display:flex;flex-direction:column;gap:8px;min-width:0}
+.team.serving{background:var(--team-soft);border-color:var(--team)}
+.team-head{display:flex;justify-content:space-between;align-items:center;gap:6px}
+.team-name{font-family:var(--font-display);font-weight:700;font-size:17px;text-transform:uppercase;letter-spacing:.04em}
+.serve-pill{font-size:10px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;padding:2px 7px;border-radius:999px;background:var(--team);color:var(--on-team)}
+.team-players{font-size:13px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.team-score{font-family:var(--font-display);font-weight:700;font-size:54px;line-height:.9;font-variant-numeric:tabular-nums}
+.team-check{font-size:12px;color:var(--muted);min-height:2.6em}
+.team-check b{color:var(--fg)}
+.score-btns{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.btn-point,.btn-next{min-height:64px;border-radius:10px;border:2px solid var(--team);font-family:var(--font-display);font-weight:700;font-size:28px;line-height:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px}
+.btn-point{background:var(--team);color:var(--on-team)}
+.btn-next{background:var(--surface)}
+.btn-point small,.btn-next small{font-family:var(--font-body);font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase}
+.btn-point:disabled,.btn-next:disabled{opacity:.28}
+.btn-point:active:not(:disabled),.btn-next:active:not(:disabled){transform:scale(.97)}
+.btn-to{min-height:42px;border-radius:9px;border:1px solid var(--line);background:var(--surface);font-weight:600;font-size:14px}
+.btn-to:disabled{opacity:.45}
+.bump{animation:bump .3s ease}
+@keyframes bump{40%{transform:scale(1.12)}}
+
+.bottombar{display:flex;align-items:center;gap:10px;margin-top:auto}
+.bottombar .btn{min-height:50px}
+#btnUndo{flex:none;min-width:110px}
+.last{flex:1;min-width:0;font-size:12px;color:var(--muted);line-height:1.3}
+.last b{color:var(--fg)}
+
+/* ---------- overlays ---------- */
+.overlay{position:fixed;inset:0;z-index:20;background:rgba(5,10,8,.55);display:flex;align-items:flex-end;justify-content:center;
+  padding:16px;padding-bottom:calc(16px + env(safe-area-inset-bottom,0px))}
+.sheet{width:100%;max-width:480px;background:var(--surface);border-radius:16px;padding:20px;display:flex;flex-direction:column;gap:12px;box-shadow:0 10px 40px rgba(0,0,0,.3)}
+.sheet h3{margin:0;font-family:var(--font-display);font-size:30px;font-weight:700;text-transform:uppercase;letter-spacing:.03em;line-height:1}
+.sheet p{margin:0;color:var(--muted)}
+.to-clock{font-family:var(--font-display);font-weight:700;font-size:96px;line-height:1;text-align:center;font-variant-numeric:tabular-nums}
+.to-sheet{border-top:6px solid var(--team)}
+.to-sheet.low .to-clock{color:var(--warn)}
+.to-sheet.done .to-clock{color:var(--danger);animation:blink 1s steps(2) infinite}
+@keyframes blink{50%{opacity:.35}}
+.final{display:grid;grid-template-columns:1fr auto;gap:4px 12px;align-items:baseline}
+.final .nm{font-weight:600;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.final .sc{font-family:var(--font-display);font-size:34px;font-weight:700;font-variant-numeric:tabular-nums}
+.final .win{color:var(--fg)} .final .lose{color:var(--muted)}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:30;background:var(--fg);color:var(--bg);padding:10px 16px;border-radius:999px;font-weight:600;font-size:14px}
+
+/* ---------- results ---------- */
+.results{display:flex;flex-direction:column;gap:10px;padding-bottom:24px}
+.res{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:12px 14px;display:flex;flex-direction:column;gap:6px}
+.res-meta{display:flex;justify-content:space-between;gap:8px;font-size:12px;color:var(--muted);flex-wrap:wrap}
+.res-row{display:grid;grid-template-columns:10px 1fr auto;gap:8px;align-items:center}
+.res-row i{width:10px;height:10px;border-radius:3px;background:var(--team)}
+.res-row .nm{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.res-row .sc{font-family:var(--font-display);font-weight:700;font-size:26px;font-variant-numeric:tabular-nums}
+.res-row.win .nm{font-weight:700}
+.res-row.lose{color:var(--muted)}
+.res-foot{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.chip{font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;padding:2px 8px;border-radius:999px;background:var(--warn-soft);color:var(--warn)}
+.res .btn{min-height:36px;padding:4px 10px;font-size:13px}
+.empty{text-align:center;color:var(--muted);padding:40px 12px;border:1px dashed var(--line);border-radius:var(--r)}
+
+@media (prefers-reduced-motion: reduce){
+  .pl,.c-serve{transition:none} .bump,.to-sheet.done .to-clock{animation:none}
+}
+@media (max-height:700px){
+  .call-num{font-size:48px} .team-score{font-size:44px} .clock{font-size:32px}
+}
+</style>
+</head>
+<body>
+
+<!-- ================= SETUP ================= -->
+<section id="scrSetup" class="screen">
+  <header class="app-head">
+    <div class="brand">Pickleball Umpire<small>Doubles · side-out scoring</small></div>
+    <button type="button" class="btn" id="btnResults1">Results</button>
+  </header>
+  <form class="setup" id="setupForm" novalidate>
+    <div class="card team-card t-0">
+      <h2>Team 1 <span>serves first</span></h2>
+      <div class="field">
+        <label for="t1a">Baseline player <span class="tag-base">FIRST SERVER</span></label>
+        <input type="text" id="t1a" autocomplete="off" autocapitalize="words" placeholder="e.g. Santos">
+        <p class="hint">Starts on the right. On the right whenever Team 1's score is even.</p>
+      </div>
+      <div class="field">
+        <label for="t1b">Partner</label>
+        <input type="text" id="t1b" autocomplete="off" autocapitalize="words" placeholder="e.g. Reyes">
+      </div>
+    </div>
+    <div class="card team-card t-1">
+      <h2>Team 2 <span>receives first</span></h2>
+      <div class="field">
+        <label for="t2a">Baseline player <span class="tag-base">FIRST RECEIVER</span></label>
+        <input type="text" id="t2a" autocomplete="off" autocapitalize="words" placeholder="e.g. Garcia">
+        <p class="hint">Starts on the right. On the right whenever Team 2's score is even.</p>
+      </div>
+      <div class="field">
+        <label for="t2b">Partner</label>
+        <input type="text" id="t2b" autocomplete="off" autocapitalize="words" placeholder="e.g. Lim">
+      </div>
+    </div>
+
+    <div class="card">
+      <fieldset class="seg big-seg">
+        <legend>Game to (win by 2)</legend>
+        <div class="opts">
+          <label><input type="radio" name="target" id="tg11" value="11" checked><span>11</span></label>
+          <label><input type="radio" name="target" id="tg15" value="15"><span>15</span></label>
+          <label><input type="radio" name="target" id="tg21" value="21"><span>21</span></label>
+        </div>
+      </fieldset>
+      <div class="grid2">
+        <div class="field">
+          <label for="switchAt">Switch ends at</label>
+          <div class="stepper"><button type="button" data-step="switchAt" data-d="-1" aria-label="Lower">−</button><input type="number" id="switchAt" inputmode="numeric" min="0" value="6"><button type="button" data-step="switchAt" data-d="1" aria-label="Raise">+</button></div>
+          <p class="hint">First team to reach it. 0 = off.</p>
+        </div>
+        <div class="field">
+          <label for="timeLimit">Time limit (min)</label>
+          <div class="stepper"><button type="button" data-step="timeLimit" data-d="-1" aria-label="Less time">−</button><input type="number" id="timeLimit" inputmode="numeric" min="0" max="120" value="0"><button type="button" data-step="timeLimit" data-d="1" aria-label="More time">+</button></div>
+          <p class="hint">0 = no limit, clock counts up.</p>
+        </div>
+      </div>
+      <p class="hint">Each team gets one 1-minute timeout. With a time limit, timeouts lock under 2:00.</p>
+    </div>
+
+    <div class="card">
+      <fieldset class="seg">
+        <legend>First serve</legend>
+        <div class="opts">
+          <label><input type="radio" name="firstServe" id="fs2" value="2" checked><span>0 – 0 – 2 (standard)</span></label>
+          <label><input type="radio" name="firstServe" id="fs1" value="1"><span>0 – 0 – 1</span></label>
+        </div>
+      </fieldset>
+      <fieldset class="seg">
+        <legend>From your spot at the net post</legend>
+        <div class="opts">
+          <label><input type="radio" name="view" id="vwL" value="left" checked><span>Team 1 on my left</span></label>
+          <label><input type="radio" name="view" id="vwR" value="right"><span>Team 1 on my right</span></label>
+        </div>
+      </fieldset>
+    </div>
+
+    <p class="err" id="setupErr" hidden></p>
+    <button type="submit" class="btn primary start-btn" id="btnStart">Start game</button>
+  </form>
+</section>
+
+<!-- ================= GAME ================= -->
+<section id="scrGame" class="screen" hidden>
+  <header class="topbar">
+    <button type="button" class="btn" id="btnMenu">Menu</button>
+    <div class="clock-wrap" id="clockWrap"><div class="clock" id="clock">0:00</div><div class="clock-sub" id="clockSub">Ready</div></div>
+    <button type="button" class="btn clock-btn" id="btnClock">Start</button>
+  </header>
+
+  <div class="court-frame">
+    <div class="court" id="court">
+      <svg class="court-svg" viewBox="0 0 440 200" aria-hidden="true">
+        <rect class="c-play" x="0" y="0" width="440" height="200"/>
+        <rect class="c-kitchen" x="150" y="0" width="140" height="200"/>
+        <g class="c-lines">
+          <rect x="1.25" y="1.25" width="437.5" height="197.5"/>
+          <line x1="150" y1="0" x2="150" y2="200"/>
+          <line x1="290" y1="0" x2="290" y2="200"/>
+          <line x1="0" y1="100" x2="150" y2="100"/>
+          <line x1="290" y1="100" x2="440" y2="100"/>
+        </g>
+        <line class="c-net" x1="220" y1="-6" x2="220" y2="206"/>
+        <line class="c-serve" id="serveLine" x1="75" y1="150" x2="365" y2="50"/>
+      </svg>
+      <div class="pl t-0" id="p00"><span class="pl-name"></span><span class="pl-tags"></span></div>
+      <div class="pl t-0" id="p01"><span class="pl-name"></span><span class="pl-tags"></span></div>
+      <div class="pl t-1" id="p10"><span class="pl-name"></span><span class="pl-tags"></span></div>
+      <div class="pl t-1" id="p11"><span class="pl-name"></span><span class="pl-tags"></span></div>
+    </div>
+    <div class="ends"><span class="end" id="endL"></span><span class="you">▲ You · net post</span><span class="end" id="endR"></span></div>
+  </div>
+
+  <div class="call">
+    <div class="call-num" id="call">0 – 0 – 2</div>
+    <div class="call-sub" id="callSub"></div>
+  </div>
+
+  <div class="teams">
+    <div class="team t-0" id="team0">
+      <div class="team-head"><span class="team-name">Team 1</span><span class="serve-pill" data-pill>Serving</span></div>
+      <div class="team-players" data-players></div>
+      <div class="team-score" data-score>0</div>
+      <div class="team-check" data-check></div>
+      <div class="score-btns">
+        <button type="button" class="btn-point" data-act="point" data-team="0">+1<small>point</small></button>
+        <button type="button" class="btn-next" data-act="next" data-team="0">N<small>next server</small></button>
+      </div>
+      <button type="button" class="btn-to" data-to="0">Timeout</button>
+    </div>
+    <div class="team t-1" id="team1">
+      <div class="team-head"><span class="team-name">Team 2</span><span class="serve-pill" data-pill>Serving</span></div>
+      <div class="team-players" data-players></div>
+      <div class="team-score" data-score>0</div>
+      <div class="team-check" data-check></div>
+      <div class="score-btns">
+        <button type="button" class="btn-point" data-act="point" data-team="1">+1<small>point</small></button>
+        <button type="button" class="btn-next" data-act="next" data-team="1">N<small>next server</small></button>
+      </div>
+      <button type="button" class="btn-to" data-to="1">Timeout</button>
+    </div>
+  </div>
+
+  <footer class="bottombar">
+    <button type="button" class="btn" id="btnUndo">Undo</button>
+    <div class="last" id="lastAct"></div>
+  </footer>
+</section>
+
+<!-- ================= RESULTS ================= -->
+<section id="scrResults" class="screen" hidden>
+  <header class="app-head">
+    <div class="brand">Results<small>Saved on this phone</small></div>
+    <button type="button" class="btn" id="btnBack">Back</button>
+  </header>
+  <div class="results" id="resList"></div>
+</section>
+
+<!-- ================= OVERLAYS ================= -->
+<div class="overlay" id="ovSwitch" hidden>
+  <div class="sheet">
+    <h3>Switch ends</h3>
+    <p id="switchText"></p>
+    <button type="button" class="btn primary" id="btnSwitchOk">Teams have switched</button>
+  </div>
+</div>
+
+<div class="overlay" id="ovOver" hidden>
+  <div class="sheet">
+    <h3 id="overTitle">Game</h3>
+    <div class="final" id="overFinal"></div>
+    <p id="overMeta"></p>
+    <div class="btn-row">
+      <button type="button" class="btn primary" id="btnSaveResult">Save result</button>
+      <button type="button" class="btn" id="btnOverUndo">Undo last rally</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="ovTimeout" hidden>
+  <div class="sheet to-sheet" id="toSheet">
+    <h3 id="toTitle">Timeout</h3>
+    <div class="to-clock" id="toClock">1:00</div>
+    <p id="toSub">Game clock paused.</p>
+    <div class="btn-row">
+      <button type="button" class="btn primary" id="btnToEnd">End timeout</button>
+      <button type="button" class="btn ghost" id="btnToCancel">Cancel, tapped by mistake</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="modal" hidden>
+  <div class="sheet">
+    <h3 id="mTitle"></h3>
+    <p id="mText"></p>
+    <div class="btn-row" id="mActions"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast" hidden></div>
+
+<script>
+(function(){
+  "use strict";
+  var $ = function(id){ return document.getElementById(id); };
+  var K_CFG = "pbu.config", K_GAME = "pbu.game", K_RES = "pbu.results";
+  var store = {
+    get: function(k, d){ try{ var v = localStorage.getItem(k); return v ? JSON.parse(v) : d; }catch(e){ return d; } },
+    set: function(k, v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} },
+    del: function(k){ try{ localStorage.removeItem(k); }catch(e){} }
+  };
+  var DEF_SWITCH = {11:6, 15:8, 21:11}, TIMEOUTS = 1;
+  var TO_MS = 60000, LOCK_MS = 120000;
+
+  var G = null;          // current game, persisted on every change
+  var screen = "setup";
+  var prevScreen = "setup";
+  var lastTap = 0;
+
+  function now(){ return Date.now(); }
+  function clone(o){ return JSON.parse(JSON.stringify(o)); }
+  function clamp(n, a, b){ return Math.max(a, Math.min(b, n)); }
+  function toInt(v, d){ var n = parseInt(v, 10); return isNaN(n) ? d : n; }
+  function fmt(ms, up){
+    var s = up ? Math.ceil(ms / 1000) : Math.floor(ms / 1000);
+    s = Math.max(0, s);
+    var h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), x = s % 60;
+    var ss = (x < 10 ? "0" : "") + x;
+    return h ? h + ":" + (m < 10 ? "0" : "") + m + ":" + ss : m + ":" + ss;
+  }
+  function vibrate(p){ try{ if(navigator.vibrate) navigator.vibrate(p); }catch(e){} }
+
+  /* ---------- sound (unlocked by the first tap) ---------- */
+  var actx = null;
+  function unlockAudio(){
+    try{
+      if(!actx){ var C = window.AudioContext || window.webkitAudioContext; if(C) actx = new C(); }
+      if(actx && actx.state === "suspended") actx.resume();
+    }catch(e){}
+  }
+  function beep(freq, dur, times){
+    if(!actx) return;
+    try{
+      for(var i = 0; i < times; i++){
+        var o = actx.createOscillator(), g = actx.createGain(), t0 = actx.currentTime + i * 0.3;
+        o.frequency.value = freq; o.connect(g); g.connect(actx.destination);
+        g.gain.setValueAtTime(0.0001, t0);
+        g.gain.exponentialRampToValueAtTime(0.35, t0 + 0.02);
+        g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+        o.start(t0); o.stop(t0 + dur + 0.03);
+      }
+    }catch(e){}
+  }
+  document.addEventListener("pointerdown", unlockAudio, {passive:true});
+
+  /* ---------- keep the screen on during a game ---------- */
+  var wakeLock = null;
+  function keepAwake(){
+    try{
+      if(!("wakeLock" in navigator) || wakeLock) return;
+      navigator.wakeLock.request("screen").then(function(l){
+        wakeLock = l; l.addEventListener("release", function(){ wakeLock = null; });
+      }).catch(function(){});
+    }catch(e){}
+  }
+  document.addEventListener("visibilitychange", function(){
+    if(document.visibilityState === "visible" && screen === "game") keepAwake();
+  });
+
+  /* ---------- toast & modal ---------- */
+  var toastT = 0;
+  function toast(msg){
+    var t = $("toast"); t.textContent = msg; t.hidden = false;
+    clearTimeout(toastT); toastT = setTimeout(function(){ t.hidden = true; }, 2200);
+  }
+  function modal(title, text, actions){
+    $("mTitle").textContent = title; $("mText").textContent = text || ""; $("mText").hidden = !text;
+    var box = $("mActions"); box.innerHTML = "";
+    actions.forEach(function(a){
+      var b = document.createElement("button");
+      b.type = "button"; b.className = "btn " + (a.cls || ""); b.textContent = a.label;
+      b.addEventListener("click", function(){ $("modal").hidden = true; if(a.fn) a.fn(); });
+      box.appendChild(b);
+    });
+    $("modal").hidden = false;
+  }
+
+  /* ---------- screens ---------- */
+  function show(name){
+    if(name !== screen) prevScreen = screen;
+    screen = name;
+    $("scrSetup").hidden = name !== "setup";
+    $("scrGame").hidden = name !== "game";
+    $("scrResults").hidden = name !== "results";
+    if(name === "game"){ keepAwake(); render(); }
+    if(name === "results") renderResults();
+    if(name === "setup") loadSetup();
+    window.scrollTo(0, 0);
+  }
+
+  /* ================= SETUP ================= */
+  function radio(name){ var r = document.querySelector('input[name="' + name + '"]:checked'); return r ? r.value : null; }
+  function setRadio(name, val){ var r = document.querySelector('input[name="' + name + '"][value="' + val + '"]'); if(r) r.checked = true; }
+
+  function loadSetup(){
+    var c = store.get(K_CFG, null);
+    $("setupErr").hidden = true;
+    if(!c) return;
+    var p = c.players || [["",""],["",""]];
+    $("t1a").value = p[0][0] || ""; $("t1b").value = p[0][1] || "";
+    $("t2a").value = p[1][0] || ""; $("t2b").value = p[1][1] || "";
+    setRadio("target", c.target || 11);
+    $("switchAt").value = c.switchAt != null ? c.switchAt : DEF_SWITCH[c.target || 11];
+    $("timeLimit").value = c.timeLimitMin || 0;
+    setRadio("firstServe", c.startAt2 === false ? "1" : "2");
+    setRadio("view", c.team1Left === false ? "right" : "left");
+  }
+
+  document.querySelectorAll('input[name="target"]').forEach(function(r){
+    r.addEventListener("change", function(){
+      var t = toInt(radio("target"), 11);
+      $("switchAt").value = DEF_SWITCH[t];
+    });
+  });
+  document.querySelectorAll("[data-step]").forEach(function(b){
+    b.addEventListener("click", function(){
+      var inp = $(b.getAttribute("data-step"));
+      var max = inp.id === "switchAt" ? toInt(radio("target"), 11) - 1 : toInt(inp.max, 99);
+      inp.value = clamp(toInt(inp.value, 0) + toInt(b.getAttribute("data-d"), 0), 0, max);
+    });
+  });
+
+  $("setupForm").addEventListener("submit", function(e){
+    e.preventDefault();
+    var players = [[$("t1a").value.trim(), $("t1b").value.trim()], [$("t2a").value.trim(), $("t2b").value.trim()]];
+    var missing = [];
+    if(!players[0][0]) missing.push("Team 1 baseline"); if(!players[0][1]) missing.push("Team 1 partner");
+    if(!players[1][0]) missing.push("Team 2 baseline"); if(!players[1][1]) missing.push("Team 2 partner");
+    if(missing.length){ $("setupErr").textContent = "Add a name for: " + missing.join(", ") + "."; $("setupErr").hidden = false; return; }
+    var target = toInt(radio("target"), 11);
+    var cfg = {
+      players: players,
+      target: target,
+      switchAt: clamp(toInt($("switchAt").value, DEF_SWITCH[target]), 0, target - 1),
+      timeouts: TIMEOUTS,
+      timeLimitMin: clamp(toInt($("timeLimit").value, 0), 0, 120),
+      startAt2: radio("firstServe") !== "1",
+      team1Left: radio("view") !== "right"
+    };
+    store.set(K_CFG, cfg);
+    G = newGame(cfg);
+    save();
+    show("game");
+  });
+
+  /* ================= GAME LOGIC ================= */
+  function newGame(cfg){
+    return {
+      id: "g" + now().toString(36),
+      createdAt: new Date().toISOString(),
+      cfg: cfg,
+      // score[team]; serving team; server number 1|2; server = player index (0 = baseline, 1 = partner)
+      s: {score:[0,0], serving:0, serverNum: cfg.startAt2 ? 2 : 1, server:0, switched:false, over:null, endElapsed:0},
+      hist: [],
+      last: null,
+      notice: null,
+      clock: {acc:0, since:null, started:false, timeUp:false},
+      to: {used:[0,0], active:null}
+    };
+  }
+  function save(){ if(G) store.set(K_GAME, G); }
+  function name(t, i){ return G.cfg.players[t][i]; }
+  function teamLabel(t){ return "Team " + (t + 1); }
+
+  // A team's players only swap sides when that team scores, so the baseline
+  // player (index 0) is in the right court whenever the team's score is even.
+  function rightIdx(t){ return G.s.score[t] % 2 === 0 ? 0 : 1; }
+  function leftTeam(){ return (G.cfg.team1Left !== G.s.switched) ? 0 : 1; }
+  function receiver(){
+    var s = G.s, rt = 1 - s.serving;
+    var fromRight = rightIdx(s.serving) === s.server;
+    return fromRight ? rightIdx(rt) : 1 - rightIdx(rt);
+  }
+  // Screen position (% of court box) as seen from the net post, near sideline at the bottom.
+  // Left-end team faces right, so its right court is bottom-left; right-end team's right court is top-right.
+  function pos(t, i){
+    var onLeft = leftTeam() === t, inRight = rightIdx(t) === i;
+    if(onLeft) return {x:17, y: inRight ? 75 : 25};
+    return {x:83, y: inRight ? 25 : 75};
+  }
+
+  function elapsed(){ var c = G.clock; return c.acc + (c.since ? now() - c.since : 0); }
+  function shownElapsed(){ return G.s.over !== null ? G.s.endElapsed : elapsed(); }
+  function limitMs(){ return G.cfg.timeLimitMin * 60000; }
+  function remaining(){ return limitMs() - shownElapsed(); }
+  function clockStart(){ var c = G.clock; if(!c.since){ c.since = now(); c.started = true; } }
+  function clockPause(){ var c = G.clock; if(c.since){ c.acc += now() - c.since; c.since = null; } }
+
+  function canTimeout(t){
+    if(!G || G.s.over !== null || G.to.active) return false;
+    if(G.to.used[t] >= G.cfg.timeouts) return false;
+    if(limitMs() && remaining() < LOCK_MS) return false;
+    return true;
+  }
+
+  function act(kind, t){
+    var s = G.s;
+    if(s.over !== null || G.to.active || t !== s.serving) return;
+    var tnow = now(); if(tnow - lastTap < 350) return; lastTap = tnow;   // guard against double taps
+
+    var before = s.score[s.serving] + " – " + s.score[1 - s.serving] + " – " + s.serverNum;
+    G.hist.push({s: clone(s), last: G.last});
+    if(G.hist.length > 400) G.hist.shift();
+    if(!G.clock.started) clockStart();
+
+    if(kind === "point"){
+      s.score[t]++;
+      var a = s.score[t], b = s.score[1 - t];
+      G.last = teamLabel(t) + " +1 point (was " + before + ")";
+      if(a >= G.cfg.target && a - b >= 2){
+        s.over = t; s.endElapsed = elapsed();
+      }else if(G.cfg.switchAt && !s.switched && a === G.cfg.switchAt){
+        s.switched = true; G.notice = "switch";
+        vibrate([120, 80, 120]); beep(740, 0.2, 2);
+      }
+      bump("team" + t);
+    }else{
+      if(s.serverNum === 1){
+        s.serverNum = 2; s.server = 1 - s.server;
+        G.last = teamLabel(t) + " fault, second server (was " + before + ")";
+      }else{
+        s.serving = 1 - t; s.serverNum = 1; s.server = rightIdx(s.serving);
+        G.last = "Side out to " + teamLabel(s.serving) + " (was " + before + ")";
+      }
+    }
+    vibrate(25);
+    save(); render();
+  }
+
+  function undo(){
+    if(!G || !G.hist.length || G.to.active) return;
+    var h = G.hist.pop();
+    G.s = h.s; G.last = h.last; G.notice = null;
+    save(); render(); toast("Undone");
+  }
+
+  function bump(id){
+    var el = $(id).querySelector("[data-score]");
+    el.classList.remove("bump"); void el.offsetWidth; el.classList.add("bump");
+  }
+
+  /* ---------- timeouts ---------- */
+  function startTimeout(t){
+    if(!canTimeout(t)) return;
+    var wasRunning = !!G.clock.since;
+    clockPause();
+    G.to.used[t]++;
+    G.to.active = {team:t, since:now(), resume:wasRunning, done:false};
+    save(); render(); renderTimeout();
+  }
+  function endTimeout(cancel){
+    var a = G.to.active; if(!a) return;
+    if(cancel) G.to.used[a.team] = Math.max(0, G.to.used[a.team] - 1);
+    if(a.resume && G.s.over === null) clockStart();
+    G.to.active = null;
+    save(); render();
+  }
+
+  /* ---------- results ---------- */
+  function saveResult(complete){
+    var s = G.s;
+    var winner = s.over !== null ? s.over : (s.score[0] === s.score[1] ? null : (s.score[0] > s.score[1] ? 0 : 1));
+    var res = {
+      id: G.id, date: G.createdAt, players: G.cfg.players, score: s.score.slice(), winner: winner,
+      target: G.cfg.target, durationMs: shownElapsed(), timeouts: G.to.used.slice(), complete: complete
+    };
+    var list = store.get(K_RES, []);
+    list = list.filter(function(r){ return r.id !== res.id; });
+    list.unshift(res);
+    store.set(K_RES, list);
+    store.del(K_GAME); G = null;
+    $("ovOver").hidden = true; $("ovSwitch").hidden = true;
+    show("setup"); toast("Result saved");
+  }
+
+  /* ================= RENDER ================= */
+  function render(){
+    if(!G || screen !== "game") return;
+    var s = G.s, rcv = receiver(), lt = leftTeam();
+
+    // court
+    for(var t = 0; t < 2; t++){
+      for(var i = 0; i < 2; i++){
+        var el = $("p" + t + i), p = pos(t, i);
+        el.style.left = p.x + "%"; el.style.top = p.y + "%";
+        el.querySelector(".pl-name").textContent = name(t, i);
+        var isServer = s.serving === t && s.server === i;
+        var isRecv = s.serving !== t && rcv === i;
+        var tags = [];
+        if(i === 0) tags.push("BASE");
+        tags.push(rightIdx(t) === i ? "RIGHT" : "LEFT");
+        if(isServer) tags.push("S" + s.serverNum);
+        if(isRecv) tags.push("REC");
+        el.querySelector(".pl-tags").textContent = tags.join(" · ");
+        el.classList.toggle("is-server", isServer);
+        el.classList.toggle("is-receiver", isRecv);
+      }
+    }
+    var sp = pos(s.serving, s.server), rp = pos(1 - s.serving, rcv);
+    var line = $("serveLine");
+    line.setAttribute("x1", sp.x * 4.4); line.setAttribute("y1", sp.y * 2);
+    line.setAttribute("x2", rp.x * 4.4); line.setAttribute("y2", rp.y * 2);
+    line.style.display = s.over !== null ? "none" : "";
+    setEnd($("endL"), lt); setEnd($("endR"), 1 - lt);
+
+    // score call: server score – receiver score – server number
+    $("call").textContent = s.score[s.serving] + " – " + s.score[1 - s.serving] + " – " + s.serverNum;
+    var sub = $("callSub"); sub.textContent = "";
+    if(s.over === null){
+      sub.appendChild(b(name(s.serving, s.server)));
+      sub.appendChild(document.createTextNode(" serves from the " + (rightIdx(s.serving) === s.server ? "right" : "left") + " to "));
+      sub.appendChild(b(name(1 - s.serving, rcv)));
+    }else{
+      sub.appendChild(b(teamLabel(s.over) + " wins"));
+    }
+
+    // team panels follow their end of the court
+    for(var k = 0; k < 2; k++){
+      var panel = $("team" + k), serving = s.serving === k;
+      panel.style.order = k === lt ? 0 : 1;
+      panel.classList.toggle("serving", serving && s.over === null);
+      panel.querySelector("[data-pill]").hidden = !serving || s.over !== null;
+      panel.querySelector("[data-pill]").textContent = "Serving · S" + s.serverNum;
+      panel.querySelector("[data-players]").textContent = name(k, 0) + " · " + name(k, 1);
+      panel.querySelector("[data-score]").textContent = s.score[k];
+      var even = s.score[k] % 2 === 0;
+      var chk = panel.querySelector("[data-check]"); chk.textContent = "";
+      chk.appendChild(document.createTextNode((even ? "Even" : "Odd") + " score · baseline "));
+      chk.appendChild(b(name(k, 0)));
+      chk.appendChild(document.createTextNode(" on the " + (even ? "right" : "left")));
+      var off = !serving || s.over !== null;
+      panel.querySelector('[data-act="point"]').disabled = off;
+      panel.querySelector('[data-act="next"]').disabled = off;
+      var left = G.cfg.timeouts - G.to.used[k];
+      panel.querySelector("[data-to]").textContent = "Timeout · " + left + " left";
+    }
+    renderTimeoutButtons();
+
+    // footer
+    $("btnUndo").disabled = !G.hist.length;
+    var la = $("lastAct"); la.textContent = "";
+    if(G.last){ la.appendChild(document.createTextNode("Last: ")); la.appendChild(b(G.last)); }
+    else la.textContent = "To " + G.cfg.target + ", win by 2" + (G.cfg.switchAt ? " · switch ends at " + G.cfg.switchAt : "") + ". Tap the serving team's +1 or N.";
+
+    // overlays
+    if(G.notice === "switch" && s.over === null){
+      var who = s.score[0] === G.cfg.switchAt ? 0 : 1;
+      $("switchText").textContent = teamLabel(who) + " reached " + G.cfg.switchAt + ". Teams change ends now. Each player keeps the same side, right or left. The court and panels on screen have flipped to match.";
+      $("ovSwitch").hidden = false;
+    }else $("ovSwitch").hidden = true;
+
+    if(s.over !== null){
+      var w = s.over, l = 1 - w, f = $("overFinal"); f.textContent = "";
+      $("overTitle").textContent = teamLabel(w) + " wins";
+      [w, l].forEach(function(t){
+        var nm = document.createElement("span"); nm.className = "nm " + (t === w ? "win" : "lose");
+        nm.textContent = teamLabel(t) + " · " + name(t, 0) + " / " + name(t, 1);
+        var sc = document.createElement("span"); sc.className = "sc " + (t === w ? "win" : "lose"); sc.textContent = s.score[t];
+        f.appendChild(nm); f.appendChild(sc);
+      });
+      $("overMeta").textContent = "Game time " + fmt(s.endElapsed) + " · timeouts used " + G.to.used[0] + " / " + G.to.used[1];
+      $("ovOver").hidden = false;
+    }else $("ovOver").hidden = true;
+
+    renderClock();
+    renderTimeout();
+  }
+  function b(text){ var e = document.createElement("b"); e.textContent = text; return e; }
+  function setEnd(el, t){
+    el.className = "end t-" + t; el.textContent = "";
+    el.appendChild(document.createElement("i"));
+    el.appendChild(document.createTextNode(teamLabel(t)));
+  }
+
+  function renderTimeoutButtons(){
+    for(var k = 0; k < 2; k++){
+      var btn = $("team" + k).querySelector("[data-to]"), ok = canTimeout(k);
+      if(btn.disabled === ok) btn.disabled = !ok;
+    }
+  }
+
+  var lastClock = "", lastSub = "", lastState = "";
+  function renderClock(){
+    if(!G) return;
+    var c = G.clock, lim = limitMs(), txt, sub, state = "";
+    if(lim){
+      var rem = Math.max(0, remaining());
+      txt = fmt(rem, true);
+      if(rem <= 0){ sub = "Time up"; state = "danger"; }
+      else if(rem < LOCK_MS){ sub = "Under 2:00 · no timeouts"; state = "warn"; }
+      else sub = "Remaining";
+    }else{ txt = fmt(shownElapsed()); sub = "Game time"; }
+    if(G.s.over !== null) sub = "Final";
+    else if(!c.started) sub = "Ready";
+    else if(!c.since) sub = G.to.active ? "Timeout" : "Paused";
+    if(txt !== lastClock){ $("clock").textContent = txt; lastClock = txt; }
+    if(sub !== lastSub){ $("clockSub").textContent = sub; lastSub = sub; }
+    if(state !== lastState){ $("clockWrap").className = "clock-wrap " + state; lastState = state; }
+    var cb = $("btnClock");
+    var label = !c.started ? "Start" : (c.since ? "Pause" : "Resume");
+    if(cb.textContent !== label) cb.textContent = label;
+    cb.classList.toggle("running", !!c.since);
+    cb.disabled = G.s.over !== null || !!G.to.active;
+  }
+
+  function renderTimeout(){
+    var a = G && G.to.active, ov = $("ovTimeout");
+    if(!a || screen !== "game"){ if(!ov.hidden) ov.hidden = true; return; }
+    var rem = TO_MS - (now() - a.since);
+    var sheet = $("toSheet");
+    sheet.className = "sheet to-sheet t-" + a.team + (rem <= 0 ? " done" : (rem <= 15000 ? " low" : ""));
+    $("toTitle").textContent = teamLabel(a.team) + " timeout";
+    $("toClock").textContent = fmt(Math.max(0, rem), true);
+    $("toSub").textContent = rem <= 0 ? "Time in. Call the players back." :
+      (a.resume ? "Game clock paused. It resumes when the timeout ends." : "Game clock is paused.");
+    $("btnToEnd").textContent = rem <= 0 ? "Resume play" : "End timeout";
+    $("btnToCancel").hidden = rem <= 0;
+    if(rem <= 0 && !a.done){ a.done = true; save(); vibrate([300, 150, 300]); beep(660, 0.35, 3); }
+    if(ov.hidden) ov.hidden = false;
+  }
+
+  function tick(){
+    if(screen !== "game" || !G) return;
+    renderClock();
+    renderTimeoutButtons();
+    if(G.to.active) renderTimeout();
+    if(limitMs() && !G.clock.timeUp && G.s.over === null && remaining() <= 0){
+      G.clock.timeUp = true; save(); vibrate([400, 200, 400]); beep(520, 0.4, 3); toast("Game time is up");
+    }
+  }
+  setInterval(tick, 250);
+
+  /* ================= RESULTS SCREEN ================= */
+  var pendingDelete = null;
+  function renderResults(){
+    var list = store.get(K_RES, []), box = $("resList");
+    box.textContent = "";
+    if(!list.length){
+      var e = document.createElement("div"); e.className = "empty";
+      e.textContent = "No saved games yet. Finished games appear here after you tap Save result.";
+      box.appendChild(e);
+    }
+    list.forEach(function(r){
+      var card = document.createElement("div"); card.className = "res";
+      var meta = document.createElement("div"); meta.className = "res-meta";
+      var d = new Date(r.date);
+      var ds = isNaN(d) ? "" : d.toLocaleString([], {month:"short", day:"numeric", hour:"numeric", minute:"2-digit"});
+      meta.appendChild(span(ds));
+      meta.appendChild(span("To " + r.target + " · " + fmt(r.durationMs || 0) + " · TO " + r.timeouts[0] + "/" + r.timeouts[1]));
+      card.appendChild(meta);
+      [0, 1].forEach(function(t){
+        var row = document.createElement("div");
+        row.className = "res-row t-" + t + (r.winner === t ? " win" : (r.winner === null ? "" : " lose"));
+        row.appendChild(document.createElement("i"));
+        row.appendChild(span(r.players[t][0] + " / " + r.players[t][1], "nm"));
+        row.appendChild(span(String(r.score[t]), "sc"));
+        card.appendChild(row);
+      });
+      var foot = document.createElement("div"); foot.className = "res-foot";
+      if(!r.complete){ foot.appendChild(span("Ended early", "chip")); } else foot.appendChild(span(""));
+      var del = document.createElement("button"); del.type = "button"; del.className = "btn ghost";
+      del.textContent = pendingDelete === r.id ? "Tap again to delete" : "Delete";
+      if(pendingDelete === r.id) del.className = "btn danger";
+      del.addEventListener("click", function(){
+        if(pendingDelete === r.id){
+          store.set(K_RES, store.get(K_RES, []).filter(function(x){ return x.id !== r.id; }));
+          pendingDelete = null; toast("Result deleted");
+        }else pendingDelete = r.id;
+        renderResults();
+      });
+      foot.appendChild(del);
+      card.appendChild(foot);
+      box.appendChild(card);
+    });
+    if(list.length){
+      var clr = document.createElement("button"); clr.type = "button"; clr.className = "btn ghost";
+      clr.textContent = "Delete all results";
+      clr.addEventListener("click", function(){
+        modal("Delete all results?", "This removes all " + list.length + " saved games from this phone.", [
+          {label:"Delete all", cls:"danger", fn:function(){ store.del(K_RES); renderResults(); toast("All results deleted"); }},
+          {label:"Keep them", cls:""}
+        ]);
+      });
+      box.appendChild(clr);
+    }
+  }
+  function span(text, cls){ var e = document.createElement("span"); if(cls) e.className = cls; e.textContent = text; return e; }
+
+  /* ================= WIRING ================= */
+  document.querySelectorAll("[data-act]").forEach(function(btn){
+    btn.addEventListener("click", function(){ act(btn.getAttribute("data-act"), toInt(btn.getAttribute("data-team"), 0)); });
+  });
+  document.querySelectorAll("[data-to]").forEach(function(btn){
+    btn.addEventListener("click", function(){ startTimeout(toInt(btn.getAttribute("data-to"), 0)); });
+  });
+  $("btnUndo").addEventListener("click", undo);
+  $("btnOverUndo").addEventListener("click", undo);
+  $("btnSaveResult").addEventListener("click", function(){ saveResult(true); });
+  $("btnSwitchOk").addEventListener("click", function(){ G.notice = null; save(); render(); });
+  $("btnToEnd").addEventListener("click", function(){ endTimeout(false); });
+  $("btnToCancel").addEventListener("click", function(){ endTimeout(true); toast("Timeout cancelled"); });
+  $("btnClock").addEventListener("click", function(){
+    if(!G || G.s.over !== null || G.to.active) return;
+    if(G.clock.since) clockPause(); else clockStart();
+    save(); renderClock();
+  });
+  $("btnResults1").addEventListener("click", function(){ show("results"); });
+  $("btnBack").addEventListener("click", function(){ pendingDelete = null; show(G ? "game" : "setup"); });
+  $("btnMenu").addEventListener("click", function(){
+    modal("Menu", "", [
+      {label:"Mirror court view (I moved to the other post)", fn:function(){ G.cfg.team1Left = !G.cfg.team1Left; save(); render(); toast("Court view mirrored"); }},
+      {label:"Results", fn:function(){ show("results"); }},
+      {label:"End game and save score", fn:function(){
+        modal("End game now?", "The current score is saved as ended early.", [
+          {label:"End and save", cls:"primary", fn:function(){ saveResult(G.s.over !== null); }},
+          {label:"Keep playing"}
+        ]);
+      }},
+      {label:"Discard game", cls:"danger", fn:function(){
+        modal("Discard this game?", "The score is not saved.", [
+          {label:"Discard", cls:"danger", fn:function(){ store.del(K_GAME); G = null; show("setup"); toast("Game discarded"); }},
+          {label:"Keep playing"}
+        ]);
+      }},
+      {label:"Close", cls:"ghost"}
+    ]);
+  });
+
+  /* ================= BOOT ================= */
+  function start(data){
+    var g = (data && data.G) || store.get(K_GAME, null);
+    if(g && g.cfg && g.s){ G = g; show("game"); }
+    else show("setup");
+  }
+  try{ window.claude && window.claude.hot && window.claude.hot.snapshot && window.claude.hot.snapshot(function(){ return {G:G}; }); }catch(e){}
+  var hot = window.claude && window.claude.hot;
+  if(hot && hot.ready) hot.ready(start); else start((hot && hot.data) || {});
+
+  // Offline support: cache the app on the phone after the first visit.
+  if("serviceWorker" in navigator && location.protocol === "https:"){
+    navigator.serviceWorker.register("sw.js").catch(function(){});
+  }
+})();
+</script>
+</body>
+</html>
