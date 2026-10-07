@@ -198,6 +198,58 @@ button:disabled{cursor:default}
 .res .btn{min-height:36px;padding:4px 10px;font-size:13px}
 .empty{text-align:center;color:var(--muted);padding:40px 12px;border:1px dashed var(--line);border-radius:var(--r)}
 
+/* ---------- tournament mode, sync, log, admin ---------- */
+.head-btns{display:flex;gap:6px;flex:none}
+.linkish{border:0;background:none;padding:0;color:var(--muted);font:inherit;text-decoration:underline;text-underline-offset:2px;text-align:left}
+.sync-line{margin:0 0 6px;font-size:12px;color:var(--muted)}
+.sync-line.pending{color:var(--warn)}
+.setup-block{display:flex;flex-direction:column;gap:14px}
+select,textarea{width:100%;font:inherit;font-size:16px;padding:11px 12px;border:1px solid var(--line);border-radius:9px;background:var(--bg);color:var(--fg)}
+textarea{resize:vertical;min-height:90px}
+.field input[type=password]{width:100%;font:inherit;font-size:17px;padding:11px 12px;border:1px solid var(--line);border-radius:9px;background:var(--bg);color:var(--fg)}
+.match-line{margin:0;display:flex;justify-content:space-between;gap:8px;font-size:12px;color:var(--muted)}
+.ml-label{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600;color:var(--fg)}
+.ml-sync{flex:none}
+.ml-sync.pending{color:var(--warn)}
+.res-title{font-weight:700}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip.live{background:var(--t1-soft);color:var(--fg)}
+.log-head{display:flex;flex-direction:column;gap:4px}
+.log-score{font-family:var(--font-display);font-weight:700;font-size:30px;font-variant-numeric:tabular-nums;color:var(--muted)}
+.log-score .win{color:var(--fg)}
+.log-actions{display:flex;gap:8px;padding-block:10px}
+.copy-box{font-family:ui-monospace,Consolas,monospace;font-size:12px;min-height:160px;margin-bottom:10px}
+.log-list{list-style:none;margin:0;padding:0 0 24px;display:flex;flex-direction:column}
+.log-row{display:grid;grid-template-columns:76px 1fr;gap:10px;padding:9px 0;border-bottom:1px solid var(--line)}
+.log-when{display:flex;flex-direction:column;font-variant-numeric:tabular-nums}
+.log-time{font-size:12px;color:var(--muted)}
+.log-gc{font-family:var(--font-display);font-weight:700;font-size:18px}
+.log-what{min-width:0}
+.log-detail{font-size:14px}
+.log-meta{font-size:12px;color:var(--muted)}
+.log-row.k-point .log-detail,.log-row.k-game_over .log-detail{font-weight:700}
+.log-row.k-undo .log-detail{color:var(--danger);font-weight:600}
+.log-row.k-start,.log-row.k-end{background:var(--surface-2);padding-inline:8px;border-radius:8px}
+.btn-pair{display:flex;gap:8px;flex-wrap:wrap}
+.btn-pair .btn{flex:1 1 auto}
+.btn.small{min-height:36px;padding:4px 10px;font-size:13px}
+.grid3{display:grid;grid-template-columns:90px 1fr 1fr;gap:8px}
+@media (max-width:420px){.grid3{grid-template-columns:1fr}}
+.cat-card summary{cursor:pointer;display:flex;justify-content:space-between;align-items:baseline;gap:8px;list-style:none}
+.cat-card summary::-webkit-details-marker{display:none}
+.cat-card summary::after{content:"▸";color:var(--muted)}
+.cat-card[open] summary::after{content:"▾"}
+.cat-name{font-family:var(--font-display);font-size:20px;font-weight:700;text-transform:uppercase;letter-spacing:.03em}
+.cat-meta{flex:1;text-align:right;font-size:13px;color:var(--muted)}
+.cat-card[open]{gap:12px}
+.team-list{display:flex;flex-direction:column}
+.team-row{display:grid;grid-template-columns:64px 1fr auto auto;gap:6px;align-items:center;padding:6px 0;border-bottom:1px solid var(--line)}
+.tr-code{font-family:var(--font-display);font-weight:700;font-size:17px}
+.tr-names{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.team-edit{display:flex;flex-direction:column;gap:8px;padding:8px 0;border-bottom:1px solid var(--line)}
+.sub-card{display:flex;flex-direction:column;gap:8px;padding-top:10px;border-top:1px dashed var(--line)}
+.sub-card h4{margin:0;font-size:13px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+
 @media (prefers-reduced-motion: reduce){
   .pl,.c-serve{transition:none} .bump,.to-sheet.done .to-clock{animation:none}
 }
@@ -208,36 +260,121 @@ button:disabled{cursor:default}
 </head>
 <body>
 
-<!-- ================= SETUP ================= -->
-<section id="scrSetup" class="screen">
+<!-- ================= SIGN IN ================= -->
+<section id="scrLogin" class="screen" hidden>
   <header class="app-head">
-    <div class="brand">Pickleball Umpire<small>Doubles · side-out scoring</small></div>
-    <button type="button" class="btn" id="btnResults1">Results</button>
+    <div class="brand">Pickleball Umpire<small>Umpire sign-in</small></div>
   </header>
-  <form class="setup" id="setupForm" novalidate>
-    <div class="card team-card t-0">
-      <h2>Team A <span>Player 1 starts on the right</span></h2>
+  <form class="setup" id="loginForm" novalidate>
+    <div class="card">
       <div class="grid2">
         <div class="field">
-          <label for="t1a">Player 1 (Baseline)</label>
-          <input type="text" id="t1a" autocomplete="off" autocapitalize="words" placeholder="e.g. Santos">
+          <label for="lgFirst">First name</label>
+          <input type="text" id="lgFirst" autocomplete="given-name" autocapitalize="words">
         </div>
         <div class="field">
-          <label for="t1b">Player 2</label>
-          <input type="text" id="t1b" autocomplete="off" autocapitalize="words" placeholder="e.g. Reyes">
+          <label for="lgLast">Last name</label>
+          <input type="text" id="lgLast" autocomplete="family-name" autocapitalize="words">
         </div>
       </div>
+      <div class="field">
+        <label for="lgPass">Tournament password</label>
+        <input type="password" id="lgPass" inputmode="numeric" autocomplete="current-password">
+      </div>
+      <p class="hint">Your name is recorded on every match you umpire. You only sign in once on this phone.</p>
     </div>
-    <div class="card team-card t-1">
-      <h2>Team B <span>Player 1 starts on the right</span></h2>
-      <div class="grid2">
-        <div class="field">
-          <label for="t2a">Player 1 (Baseline)</label>
-          <input type="text" id="t2a" autocomplete="off" autocapitalize="words" placeholder="e.g. Garcia">
+    <p class="err" id="loginErr" hidden></p>
+    <button type="submit" class="btn primary start-btn" id="btnLogin">Sign in</button>
+  </form>
+</section>
+
+<!-- ================= SETUP ================= -->
+<section id="scrSetup" class="screen" hidden>
+  <header class="app-head">
+    <div class="brand">Pickleball Umpire<small><button type="button" class="linkish" id="btnWho"></button></small></div>
+    <div class="head-btns">
+      <button type="button" class="btn" id="btnResults1">Matches</button>
+      <button type="button" class="btn" id="btnAdmin">Teams</button>
+    </div>
+  </header>
+  <p class="sync-line" id="syncLine"></p>
+  <form class="setup" id="setupForm" novalidate>
+    <fieldset class="seg">
+      <legend>Mode</legend>
+      <div class="opts">
+        <label><input type="radio" name="mode" id="mdT" value="tournament" checked><span>Tournament</span></label>
+        <label><input type="radio" name="mode" id="mdO" value="open"><span>Open play</span></label>
+      </div>
+    </fieldset>
+
+    <div id="tourBlock" class="setup-block">
+      <div class="card">
+        <h2 id="tourName">Tournament</h2>
+        <div class="field" id="tourPick" hidden>
+          <label for="selTour">Tournament</label>
+          <select id="selTour"></select>
         </div>
         <div class="field">
-          <label for="t2b">Player 2</label>
-          <input type="text" id="t2b" autocomplete="off" autocapitalize="words" placeholder="e.g. Lim">
+          <label for="selCat">Category</label>
+          <select id="selCat"></select>
+        </div>
+        <p class="hint" id="tourHint" hidden></p>
+      </div>
+      <div class="card team-card t-0">
+        <h2>Team A</h2>
+        <div class="field">
+          <label for="selTeamA">Team</label>
+          <select id="selTeamA"></select>
+        </div>
+        <fieldset class="seg" id="baseAWrap">
+          <legend>Baseline, starts on the right</legend>
+          <div class="opts">
+            <label><input type="radio" name="baseA" id="bA0" value="0" checked><span data-base="A0">Player 1</span></label>
+            <label><input type="radio" name="baseA" id="bA1" value="1"><span data-base="A1">Player 2</span></label>
+          </div>
+        </fieldset>
+      </div>
+      <div class="card team-card t-1">
+        <h2>Team B</h2>
+        <div class="field">
+          <label for="selTeamB">Team</label>
+          <select id="selTeamB"></select>
+        </div>
+        <fieldset class="seg" id="baseBWrap">
+          <legend>Baseline, starts on the right</legend>
+          <div class="opts">
+            <label><input type="radio" name="baseB" id="bB0" value="0" checked><span data-base="B0">Player 1</span></label>
+            <label><input type="radio" name="baseB" id="bB1" value="1"><span data-base="B1">Player 2</span></label>
+          </div>
+        </fieldset>
+      </div>
+    </div>
+
+    <div id="openBlock" class="setup-block" hidden>
+      <div class="card team-card t-0">
+        <h2>Team A <span>Player 1 starts on the right</span></h2>
+        <div class="grid2">
+          <div class="field">
+            <label for="t1a">Player 1 (Baseline)</label>
+            <input type="text" id="t1a" autocomplete="off" autocapitalize="words" placeholder="e.g. Santos">
+          </div>
+          <div class="field">
+            <label for="t1b">Player 2</label>
+            <input type="text" id="t1b" autocomplete="off" autocapitalize="words" placeholder="e.g. Reyes">
+          </div>
+        </div>
+      </div>
+      <div class="card team-card t-1">
+        <h2>Team B <span>Player 1 starts on the right</span></h2>
+        <div class="grid2">
+          <div class="field">
+            <label for="t2a">Player 1 (Baseline)</label>
+            <input type="text" id="t2a" autocomplete="off" autocapitalize="words" placeholder="e.g. Garcia">
+          </div>
+          <div class="field">
+            <label for="t2b">Player 2</label>
+            <input type="text" id="t2b" autocomplete="off" autocapitalize="words" placeholder="e.g. Lim">
+          </div>
         </div>
       </div>
     </div>
@@ -249,15 +386,15 @@ button:disabled{cursor:default}
       <fieldset class="seg">
         <legend>Serves first</legend>
         <div class="opts">
-          <label><input type="radio" name="serveTeam" id="svA" value="A" checked><span>Team A</span></label>
-          <label><input type="radio" name="serveTeam" id="svB" value="B"><span>Team B</span></label>
+          <label><input type="radio" name="serveTeam" id="svA" value="A" checked><span data-label="A">Team A</span></label>
+          <label><input type="radio" name="serveTeam" id="svB" value="B"><span data-label="B">Team B</span></label>
         </div>
       </fieldset>
       <fieldset class="seg">
         <legend>On my left, from the net post</legend>
         <div class="opts">
-          <label><input type="radio" name="leftTeam" id="lfA" value="A" checked><span>Team A</span></label>
-          <label><input type="radio" name="leftTeam" id="lfB" value="B"><span>Team B</span></label>
+          <label><input type="radio" name="leftTeam" id="lfA" value="A" checked><span data-label="A">Team A</span></label>
+          <label><input type="radio" name="leftTeam" id="lfB" value="B"><span data-label="B">Team B</span></label>
         </div>
       </fieldset>
     </div>
@@ -309,6 +446,7 @@ button:disabled{cursor:default}
     <div class="clock-wrap" id="clockWrap"><div class="clock" id="clock">0:00</div><div class="clock-sub" id="clockSub">Ready</div></div>
     <button type="button" class="btn clock-btn" id="btnClock">Start</button>
   </header>
+  <p class="match-line" id="matchLine"></p>
 
   <div class="court-frame">
     <div class="court" id="court">
@@ -369,13 +507,36 @@ button:disabled{cursor:default}
   </footer>
 </section>
 
-<!-- ================= RESULTS ================= -->
+<!-- ================= MATCHES ================= -->
 <section id="scrResults" class="screen" hidden>
   <header class="app-head">
-    <div class="brand">Results<small>Saved on this phone</small></div>
+    <div class="brand">Matches<small id="resSub">All umpires</small></div>
     <button type="button" class="btn" id="btnBack">Back</button>
   </header>
   <div class="results" id="resList"></div>
+</section>
+
+<!-- ================= MATCH LOG ================= -->
+<section id="scrLog" class="screen" hidden>
+  <header class="app-head">
+    <div class="brand">Match log<small id="logSub"></small></div>
+    <button type="button" class="btn" id="btnLogBack">Back</button>
+  </header>
+  <div class="log-head" id="logHead"></div>
+  <div class="log-actions">
+    <button type="button" class="btn" id="btnCopyLog">Copy log</button>
+  </div>
+  <textarea id="logCopyBox" class="copy-box" readonly hidden></textarea>
+  <ol class="log-list" id="logList"></ol>
+</section>
+
+<!-- ================= TEAMS ADMIN ================= -->
+<section id="scrAdmin" class="screen" hidden>
+  <header class="app-head">
+    <div class="brand">Teams<small>Shared with all umpires</small></div>
+    <button type="button" class="btn" id="btnAdminBack">Back</button>
+  </header>
+  <div class="setup" id="adminBody"></div>
 </section>
 
 <!-- ================= OVERLAYS ================= -->
@@ -429,7 +590,13 @@ button:disabled{cursor:default}
 (function(){
   "use strict";
   var $ = function(id){ return document.getElementById(id); };
+
+  /* ---------- shared database (Supabase). The key is public by design; the password guards the data. ---------- */
+  var SB_URL = "https://ibeniudbzjgueobehekd.supabase.co";
+  var SB_KEY = "sb_publishable_KBlXyV-97uKlwqWxAIbRGA_HXnJHnvb";
+
   var K_SETUP = "pbu.setup", K_GAME = "pbu.game", K_RES = "pbu.results";
+  var K_UMP = "pbu.umpire", K_DATA = "pbu.data", K_TOUR = "pbu.tournament", K_OUT = "pbu.outbox";
   var store = {
     get: function(k, d){ try{ var v = localStorage.getItem(k); return v ? JSON.parse(v) : d; }catch(e){ return d; } },
     set: function(k, v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} },
@@ -440,7 +607,6 @@ button:disabled{cursor:default}
 
   var G = null;          // current game, persisted on every change
   var screen = "setup";
-  var prevScreen = "setup";
   var lastTap = 0;
 
   function now(){ return Date.now(); }
@@ -454,7 +620,34 @@ button:disabled{cursor:default}
     var ss = (x < 10 ? "0" : "") + x;
     return h ? h + ":" + (m < 10 ? "0" : "") + m + ":" + ss : m + ":" + ss;
   }
+  function clockTime(iso){
+    var d = new Date(iso);
+    return isNaN(d) ? "" : d.toLocaleTimeString([], {hour:"numeric", minute:"2-digit", second:"2-digit"});
+  }
+  function shortDate(iso){
+    var d = new Date(iso);
+    return isNaN(d) ? "" : d.toLocaleString([], {month:"short", day:"numeric", hour:"numeric", minute:"2-digit"});
+  }
   function vibrate(p){ try{ if(navigator.vibrate) navigator.vibrate(p); }catch(e){} }
+  function uid(){ return now().toString(36) + Math.random().toString(36).slice(2, 7); }
+
+  // Tiny element builder: h("div", {class:"x", text:"hi", onclick:fn}, [children])
+  function h(tag, props, kids){
+    var e = document.createElement(tag);
+    if(props) Object.keys(props).forEach(function(k){
+      var v = props[k];
+      if(v == null || v === false) return;
+      if(k === "class") e.className = v;
+      else if(k === "text") e.textContent = v;
+      else if(k.slice(0, 2) === "on") e.addEventListener(k.slice(2), v);
+      else if(k === "value") e.value = v;
+      else e.setAttribute(k, v === true ? "" : v);
+    });
+    (kids || []).forEach(function(c){ if(c != null) e.appendChild(typeof c === "string" ? document.createTextNode(c) : c); });
+    return e;
+  }
+  function b(text){ return h("b", {text:text}); }
+  function span(text, cls){ return h("span", {class:cls, text:text}); }
 
   /* ---------- sound (unlocked by the first tap) ---------- */
   var actx = null;
@@ -497,102 +690,351 @@ button:disabled{cursor:default}
   var toastT = 0;
   function toast(msg){
     var t = $("toast"); t.textContent = msg; t.hidden = false;
-    clearTimeout(toastT); toastT = setTimeout(function(){ t.hidden = true; }, 2200);
+    clearTimeout(toastT); toastT = setTimeout(function(){ t.hidden = true; }, 2400);
   }
   function modal(title, text, actions){
     $("mTitle").textContent = title; $("mText").textContent = text || ""; $("mText").hidden = !text;
-    var box = $("mActions"); box.innerHTML = "";
+    var box = $("mActions"); box.textContent = "";
     actions.forEach(function(a){
-      var b = document.createElement("button");
-      b.type = "button"; b.className = "btn " + (a.cls || ""); b.textContent = a.label;
-      b.addEventListener("click", function(){ $("modal").hidden = true; if(a.fn) a.fn(); });
-      box.appendChild(b);
+      box.appendChild(h("button", {type:"button", class:"btn " + (a.cls || ""), text:a.label, onclick:function(){ $("modal").hidden = true; if(a.fn) a.fn(); }}));
     });
     $("modal").hidden = false;
   }
 
-  /* ---------- screens ---------- */
+  /* ================= SERVER ================= */
+  function rpc(fn, args){
+    var headers = {"Content-Type":"application/json", "apikey":SB_KEY};
+    if(SB_KEY.indexOf("eyJ") === 0) headers.Authorization = "Bearer " + SB_KEY;
+    return fetch(SB_URL + "/rest/v1/rpc/" + fn, {method:"POST", headers:headers, body:JSON.stringify(args)})
+      .then(function(r){
+        return r.text().then(function(t){
+          var j = null; try{ j = t ? JSON.parse(t) : null; }catch(e){}
+          if(!r.ok){
+            var err = new Error((j && j.message) || ("HTTP " + r.status));
+            err.status = r.status; err.auth = /wrong password/i.test(err.message);
+            throw err;
+          }
+          return j;
+        });
+      });
+  }
+  function ump(){ return store.get(K_UMP, null); }
+  function umpName(){ var u = ump(); return u ? u.name : ""; }
+
+  /* ---------- tournament data (cached on the phone for offline use) ---------- */
+  var dataState = "idle";   // idle | loading | ok | offline
+  function data(){ return store.get(K_DATA, {tournaments:[], categories:[], teams:[], at:null}); }
+  function curTour(){
+    var d = data(), id = store.get(K_TOUR, null);
+    var t = d.tournaments.filter(function(x){ return x.id === id; })[0];
+    return t || d.tournaments[d.tournaments.length - 1] || null;
+  }
+  function catsOf(tid){ return data().categories.filter(function(c){ return c.tournament_id === tid; }); }
+  function teamsOf(cid){
+    return data().teams.filter(function(t){ return t.category_id === cid; })
+      .sort(function(a, b){ return a.code.localeCompare(b.code, undefined, {numeric:true}); });
+  }
+  function findCat(id){ return data().categories.filter(function(c){ return c.id === id; })[0] || null; }
+  function findTeam(id){ return data().teams.filter(function(t){ return t.id === id; })[0] || null; }
+
+  function loadData(){
+    var u = ump(); if(!u) return Promise.resolve();
+    dataState = "loading"; updateSyncLine();
+    return rpc("pb_get_data", {p_pass:u.pass}).then(function(d){
+      d.at = new Date().toISOString();
+      store.set(K_DATA, d);
+      dataState = "ok";
+      if(screen === "setup") fillTourSetup();
+      if(screen === "admin") renderAdmin();
+      updateSyncLine();
+    }).catch(function(err){
+      dataState = "offline";
+      if(err.auth) authLost();
+      updateSyncLine();
+    });
+  }
+
+  /* ---------- upload queue: every log entry waits here until the server has it ---------- */
+  var syncing = false, syncTimer = 0, syncState = "ok";
+  function outbox(){ return store.get(K_OUT, {}); }
+  function pendingCount(){
+    var o = outbox(), n = 0;
+    Object.keys(o).forEach(function(k){ n += o[k].events.length || 1; });
+    return n;
+  }
+  function queue(match, events){
+    var o = outbox();
+    var it = o[match.id] || {events:[]};
+    it.match = match;
+    it.events = it.events.concat(events || []);
+    o[match.id] = it;
+    store.set(K_OUT, o);
+    scheduleSync(1200);
+  }
+  function scheduleSync(ms){ clearTimeout(syncTimer); syncTimer = setTimeout(sync, ms == null ? 1200 : ms); }
+  function sync(){
+    var u = ump();
+    if(syncing || !u) return;
+    var o = outbox(), ids = Object.keys(o);
+    if(!ids.length){ syncState = "ok"; updateSyncLine(); return; }
+    syncing = true; syncState = "busy"; updateSyncLine();
+    var id = ids[0], item = o[id], sent = item.events.slice(0, 200);
+    rpc("pb_sync_match", {p_pass:u.pass, p_match:item.match, p_events:sent}).then(function(){
+      var o2 = outbox(), it = o2[id];
+      if(it){
+        var done = {}; sent.forEach(function(e){ done[e.id] = 1; });
+        it.events = it.events.filter(function(e){ return !done[e.id]; });
+        if(!it.events.length && JSON.stringify(it.match) === JSON.stringify(item.match)) delete o2[id];
+        store.set(K_OUT, o2);
+      }
+      syncing = false;
+      sync();
+    }).catch(function(err){
+      syncing = false;
+      syncState = err.auth ? "auth" : "offline";
+      if(err.auth) authLost();
+      updateSyncLine();
+      scheduleSync(15000);
+    });
+  }
+  window.addEventListener("online", function(){ scheduleSync(200); loadData(); });
+  setInterval(function(){ if(!syncing && Object.keys(outbox()).length) sync(); }, 20000);
+
+  function syncText(){
+    var n = pendingCount();
+    if(syncState === "auth") return "Password changed. Sign in again to upload.";
+    if(!n) return "Everything is saved online";
+    if(syncState === "busy") return "Uploading " + n + " log " + (n === 1 ? "entry" : "entries") + "…";
+    return n + " log " + (n === 1 ? "entry" : "entries") + " waiting for internet. Saved on this phone.";
+  }
+  function updateSyncLine(){
+    var d = data(), parts = [];
+    if(dataState === "loading") parts.push("Loading teams…");
+    else if(d.at) parts.push("Teams updated " + clockTime(d.at).replace(/:\d\d(?=\s|$)/, "") + (dataState === "offline" ? " (offline)" : ""));
+    else if(dataState === "offline") parts.push("Offline. Teams not loaded yet.");
+    parts.push(syncText());
+    $("syncLine").textContent = parts.join(" · ");
+    $("syncLine").className = "sync-line" + (pendingCount() ? " pending" : "");
+    if(G && screen === "game") renderMatchLine();
+  }
+  function authLost(){
+    toast("The tournament password changed. Sign in again.");
+  }
+
+  /* ================= SCREENS ================= */
+  var SCREENS = {login:"scrLogin", setup:"scrSetup", game:"scrGame", results:"scrResults", log:"scrLog", admin:"scrAdmin"};
+  var backTo = "setup";
   function show(name){
-    if(name !== screen) prevScreen = screen;
     screen = name;
-    $("scrSetup").hidden = name !== "setup";
-    $("scrGame").hidden = name !== "game";
-    $("scrResults").hidden = name !== "results";
+    Object.keys(SCREENS).forEach(function(k){ $(SCREENS[k]).hidden = k !== name; });
     if(name === "game"){ keepAwake(); render(); }
-    if(name === "results") renderResults();
+    if(name === "results") showMatches();
     if(name === "setup") loadSetup();
+    if(name === "admin") renderAdmin();
     window.scrollTo(0, 0);
   }
+
+  /* ================= SIGN IN ================= */
+  $("loginForm").addEventListener("submit", function(e){
+    e.preventDefault();
+    var first = $("lgFirst").value.trim(), last = $("lgLast").value.trim(), pass = $("lgPass").value.trim();
+    var err = $("loginErr");
+    if(!first || !last || !pass){ err.textContent = "Enter your first name, last name and the tournament password."; err.hidden = false; return; }
+    var name = first + " " + last;
+    $("btnLogin").disabled = true; $("btnLogin").textContent = "Checking…";
+    rpc("pb_check", {p_pass:pass, p_umpire:name}).then(function(){
+      store.set(K_UMP, {first:first, last:last, name:name, pass:pass});
+      err.hidden = true; $("lgPass").value = "";
+      syncState = "ok";
+      loadData(); scheduleSync(300);
+      show(G ? "game" : "setup");
+      toast("Signed in as " + name);
+    }).catch(function(x){
+      err.textContent = x.auth ? "That password is wrong. Ask the tournament organizer for it." :
+        "Can't reach the server. Connect to the internet for your first sign-in, then try again.";
+      err.hidden = false;
+    }).then(function(){ $("btnLogin").disabled = false; $("btnLogin").textContent = "Sign in"; });
+  });
+  $("btnWho").addEventListener("click", function(){
+    modal("Signed in as " + umpName(), "Sign out to switch umpires on this phone. Unsent log entries stay saved and upload after the next sign-in.", [
+      {label:"Sign out", cls:"danger", fn:function(){
+        var u = ump(); store.del(K_UMP);
+        if(u){ $("lgFirst").value = u.first; $("lgLast").value = u.last; }
+        show("login");
+      }},
+      {label:"Stay signed in"}
+    ]);
+  });
 
   /* ================= SETUP ================= */
   function radio(name){ var r = document.querySelector('input[name="' + name + '"]:checked'); return r ? r.value : null; }
   function setRadio(name, val){ var r = document.querySelector('input[name="' + name + '"][value="' + val + '"]'); if(r) r.checked = true; }
+  var tossInfo = null;   // text of the applied coin toss, for the log
 
-  function setupNames(){
-    return {A:[$("t1a").value.trim(), $("t1b").value.trim()], B:[$("t2a").value.trim(), $("t2b").value.trim()]};
+  function mode(){ return radio("mode") || "tournament"; }
+  function applyMode(){
+    var m = mode();
+    $("tourBlock").hidden = m !== "tournament";
+    $("openBlock").hidden = m !== "open";
+    refreshLabels();
   }
+  document.querySelectorAll('input[name="mode"]').forEach(function(r){
+    r.addEventListener("change", function(){ clearToss(); applyMode(); });
+  });
+
   function loadSetup(){
     var c = store.get(K_SETUP, null);
     $("setupErr").hidden = true;
+    $("btnWho").textContent = "Umpire: " + umpName() + " · Sign out";
     if(c){
-      $("t1a").value = c.A[0] || ""; $("t1b").value = c.A[1] || "";
-      $("t2a").value = c.B[0] || ""; $("t2b").value = c.B[1] || "";
+      if(c.A){ $("t1a").value = c.A[0] || ""; $("t1b").value = c.A[1] || ""; }
+      if(c.B){ $("t2a").value = c.B[0] || ""; $("t2b").value = c.B[1] || ""; }
       setRadio("target", c.target || 11);
       $("switchAt").value = c.switchAt != null ? c.switchAt : DEF_SWITCH[c.target || 11];
       setRadio("firstServe", c.startAt2 === false ? "1" : "2");
+      setRadio("mode", c.mode || "tournament");
     }
-    // Time limit, serve and sides start fresh for each game.
+    // Time limit, teams, baseline, serve and sides start fresh for each game.
     $("timeLimit").value = DEF_TIME;
+    $("selTeamA").value = ""; $("selTeamB").value = "";
+    setRadio("baseA", "0"); setRadio("baseB", "0");
+    clearToss();
+    fillTourSetup();
+    applyMode();
+    updateSyncLine();
+  }
+  function clearToss(){
+    tossInfo = null;
     setRadio("serveTeam", "A"); setRadio("leftTeam", "A");
     $("tossResult").textContent = "The toss picks a random player to call it. You can also set these by hand.";
   }
 
+  function option(value, text){ return h("option", {value:value, text:text}); }
+  function fillSelect(sel, opts, keep){
+    var prev = keep ? sel.value : "";
+    sel.textContent = "";
+    opts.forEach(function(o){ sel.appendChild(o); });
+    if(prev && opts.some(function(o){ return o.value === prev; })) sel.value = prev;
+  }
+  function fillTourSetup(){
+    var d = data(), tour = curTour();
+    $("tourName").textContent = tour ? tour.name : "No tournament yet";
+    $("tourPick").hidden = d.tournaments.length < 2;
+    fillSelect($("selTour"), d.tournaments.map(function(t){ return option(t.id, t.name); }), false);
+    if(tour) $("selTour").value = tour.id;
+
+    var cats = tour ? catsOf(tour.id) : [];
+    var hint = $("tourHint");
+    if(!tour || !cats.length){
+      hint.textContent = !d.at && dataState !== "ok" ? "Teams haven't loaded yet. Connect to the internet once to download them." :
+        "No categories yet. Tap Teams at the top to add the tournament, categories and teams.";
+      hint.hidden = false;
+    }else hint.hidden = true;
+    fillSelect($("selCat"), [option("", cats.length ? "Choose category" : "No categories")].concat(cats.map(function(c){
+      return option(c.id, c.name + " (" + teamsOf(c.id).length + " teams)");
+    })), true);
+    if(!$("selCat").value && cats.length === 1) $("selCat").value = cats[0].id;
+    fillTeams();
+  }
+  function fillTeams(){
+    var teams = $("selCat").value ? teamsOf($("selCat").value) : [];
+    ["selTeamA", "selTeamB"].forEach(function(id){
+      fillSelect($(id), [option("", teams.length ? "Choose team" : "Choose a category first")].concat(teams.map(function(t){
+        return option(t.id, t.code + " · " + t.player1 + " / " + t.player2);
+      })), true);
+    });
+    refreshLabels();
+  }
+  $("selTour").addEventListener("change", function(){ store.set(K_TOUR, $("selTour").value); fillTourSetup(); });
+  $("selCat").addEventListener("change", function(){ clearToss(); fillTeams(); });
+  ["selTeamA", "selTeamB"].forEach(function(id){
+    $(id).addEventListener("change", function(){ clearToss(); setRadio(id === "selTeamA" ? "baseA" : "baseB", "0"); refreshLabels(); });
+  });
+  ["t1a", "t1b", "t2a", "t2b"].forEach(function(id){ $(id).addEventListener("input", refreshLabels); });
+
+  // Everything the setup needs to know about one side, in either mode.
+  function teamInfo(k){
+    if(mode() === "open"){
+      var p = k === "A" ? [$("t1a").value.trim(), $("t1b").value.trim()] : [$("t2a").value.trim(), $("t2b").value.trim()];
+      return {key:k, label:"Team " + k, code:null, id:null, p:p, base:0};
+    }
+    var t = findTeam($(k === "A" ? "selTeamA" : "selTeamB").value);
+    if(!t) return {key:k, label:"Team " + k, code:null, id:null, p:["", ""], base:0, missing:true};
+    return {key:k, label:t.code, code:t.code, id:t.id, p:[t.player1, t.player2], base:toInt(radio(k === "A" ? "baseA" : "baseB"), 0)};
+  }
+  function refreshLabels(){
+    var T = {A:teamInfo("A"), B:teamInfo("B")};
+    document.querySelectorAll("[data-label]").forEach(function(s){ s.textContent = T[s.getAttribute("data-label")].label; });
+    document.querySelectorAll("[data-base]").forEach(function(s){
+      var key = s.getAttribute("data-base"), t = T[key[0]], i = +key[1];
+      s.textContent = t.p[i] || ("Player " + (i + 1));
+    });
+    $("baseAWrap").hidden = T.A.missing; $("baseBWrap").hidden = T.B.missing;
+  }
+
   document.querySelectorAll('input[name="target"]').forEach(function(r){
-    r.addEventListener("change", function(){
-      var t = toInt(radio("target"), 11);
-      $("switchAt").value = DEF_SWITCH[t];
-    });
+    r.addEventListener("change", function(){ $("switchAt").value = DEF_SWITCH[toInt(radio("target"), 11)]; });
   });
-  document.querySelectorAll("[data-step]").forEach(function(b){
-    b.addEventListener("click", function(){
-      var inp = $(b.getAttribute("data-step"));
+  document.querySelectorAll("[data-step]").forEach(function(btn){
+    btn.addEventListener("click", function(){
+      var inp = $(btn.getAttribute("data-step"));
       var max = inp.id === "switchAt" ? toInt(radio("target"), 11) - 1 : toInt(inp.max, 99);
-      inp.value = clamp(toInt(inp.value, 0) + toInt(b.getAttribute("data-d"), 0), 0, max);
+      inp.value = clamp(toInt(inp.value, 0) + toInt(btn.getAttribute("data-d"), 0), 0, max);
     });
   });
-  document.querySelectorAll("[data-preset]").forEach(function(b){
-    b.addEventListener("click", function(){ $("timeLimit").value = b.getAttribute("data-preset"); });
+  document.querySelectorAll("[data-preset]").forEach(function(btn){
+    btn.addEventListener("click", function(){ $("timeLimit").value = btn.getAttribute("data-preset"); });
   });
 
-  function missingNames(n){
+  function setupError(msg){
+    var e = $("setupErr");
+    if(msg){ e.textContent = msg; e.hidden = false; } else e.hidden = true;
+    return !!msg;
+  }
+  function checkTeams(A, B){
+    if(mode() === "tournament"){
+      if(!$("selCat").value) return setupError("Choose a category.");
+      if(A.missing || B.missing) return setupError("Choose both teams.");
+      if(A.id === B.id) return setupError("Team A and Team B are the same team. Choose two different teams.");
+      return setupError("");
+    }
     var m = [];
-    if(!n.A[0]) m.push("Team A player 1"); if(!n.A[1]) m.push("Team A player 2");
-    if(!n.B[0]) m.push("Team B player 1"); if(!n.B[1]) m.push("Team B player 2");
-    if(m.length){ $("setupErr").textContent = "Add a name for: " + m.join(", ") + "."; $("setupErr").hidden = false; }
-    else $("setupErr").hidden = true;
-    return m.length > 0;
+    if(!A.p[0]) m.push("Team A player 1"); if(!A.p[1]) m.push("Team A player 2");
+    if(!B.p[0]) m.push("Team B player 1"); if(!B.p[1]) m.push("Team B player 2");
+    return setupError(m.length ? "Add a name for: " + m.join(", ") + "." : "");
   }
 
   $("setupForm").addEventListener("submit", function(e){
     e.preventDefault();
-    var n = setupNames();
-    if(missingNames(n)) return;
+    var A = teamInfo("A"), B = teamInfo("B"), T = {A:A, B:B};
+    if(checkTeams(A, B)) return;
     var target = toInt(radio("target"), 11);
     var raw = {
-      A: n.A, B: n.B,
+      mode: mode(), A: mode() === "open" ? A.p : undefined, B: mode() === "open" ? B.p : undefined,
       target: target,
       switchAt: clamp(toInt($("switchAt").value, DEF_SWITCH[target]), 0, target - 1),
       timeLimitMin: clamp(toInt($("timeLimit").value, DEF_TIME), 0, 60),
       startAt2: radio("firstServe") !== "1"
     };
+    var old = store.get(K_SETUP, {});
+    if(mode() !== "open"){ raw.A = old.A; raw.B = old.B; }
     store.set(K_SETUP, raw);
-    // The game engine treats team 0 as the first-serving team. Player 1 (index 0) is always the baseline.
+
+    // The game engine treats team 0 as the first-serving team and player 0 as each team's baseline.
     var serveA = radio("serveTeam") !== "B", leftA = radio("leftTeam") !== "B";
-    var A = n.A, B = n.B;
+    var keys = serveA ? ["A", "B"] : ["B", "A"];
+    function ordered(t){ return [t.p[t.base], t.p[1 - t.base]]; }
+    var cat = mode() === "tournament" ? findCat($("selCat").value) : null, tour = curTour();
+    var label = cat ? cat.name + " · " + A.code + " vs " + B.code
+                    : "Open play · " + A.p.join(" / ") + " vs " + B.p.join(" / ");
     var cfg = {
-      players: serveA ? [A, B] : [B, A],
-      names: serveA ? ["Team A", "Team B"] : ["Team B", "Team A"],
-      colors: serveA ? [0, 1] : [1, 0],
+      mode: mode(), label: label,
+      tournamentId: cat && tour ? tour.id : null, categoryId: cat ? cat.id : null,
+      teams: {A:{label:A.label, code:A.code, id:A.id, p:A.p}, B:{label:B.label, code:B.code, id:B.id, p:B.p}},
+      keys: keys,
+      players: keys.map(function(k){ return ordered(T[k]); }),
+      names: keys.map(function(k){ return T[k].label; }),
+      colors: keys.map(function(k){ return k === "A" ? 0 : 1; }),
       target: target,
       switchAt: raw.switchAt,
       timeouts: TIMEOUTS,
@@ -601,13 +1043,19 @@ button:disabled{cursor:default}
       team1Left: serveA === leftA
     };
     G = newGame(cfg);
-    save();
+    var leftKey = leftA ? "A" : "B";
+    logEvent("start", "Match started: " + label + ". " +
+      "Baselines: " + A.label + " " + ordered(A)[0] + ", " + B.label + " " + ordered(B)[0] + ". " +
+      T[keys[0]].label + " serves first, " + T[leftKey].label + " on the umpire's left. " +
+      "Game to " + target + ", " + (raw.timeLimitMin ? raw.timeLimitMin + " min time limit" : "no time limit") +
+      (raw.switchAt ? ", switch ends at " + raw.switchAt : "") + "." +
+      (tossInfo ? " " + tossInfo : " No coin toss."));
     show("game");
   });
 
   /* ---------- coin toss ---------- */
   // One random player calls between two random tokens. Right call: their team wins the toss.
-  // The winner picks serve/receive or the end; the other team gets the remaining choice.
+  // The winner picks Serve or Court. Whoever takes the court receives; the other team serves at 0-0-2.
   var toss = null;
   function rnd(n){
     try{ var a = new Uint32Array(1); crypto.getRandomValues(a); return a[0] % n; }
@@ -618,87 +1066,75 @@ button:disabled{cursor:default}
     var l = L[rnd(L.length)], d = D[rnd(D.length)];
     return k === 0 ? l : (k === 1 ? d : l + d);
   }
-  function newToss(n){
-    var a = token(), b = token();
-    while(b === a) b = token();
-    var c = rnd(4);
-    return {step:"call", names:n, caller:{team: c < 2 ? "A" : "B", idx: c % 2}, tokens:[a, b], win: rnd(2)};
+  function newToss(T){
+    var a = token(), c = token();
+    while(c === a) c = token();
+    var r = rnd(4);
+    return {step:"call", T:T, caller:{team: r < 2 ? "A" : "B", idx: r % 2}, tokens:[a, c], win: rnd(2)};
   }
   function other(k){ return k === "A" ? "B" : "A"; }
-  function tName(k){ return "Team " + k; }
-  function tPlayers(k){ return toss.names[k][0] + " & " + toss.names[k][1]; }
+  function tName(k){ return toss.T[k].label; }
+  function tPlayers(k){ return toss.T[k].p[0] + " & " + toss.T[k].p[1]; }
 
   $("btnToss").addEventListener("click", function(){
-    var n = setupNames();
-    if(missingNames(n)) return;
-    toss = newToss(n);
+    var A = teamInfo("A"), B = teamInfo("B");
+    if(checkTeams(A, B)) return;
+    toss = newToss({A:A, B:B});
     renderToss();
   });
-
-  function tossBtn(label, cls, fn){
-    var b = document.createElement("button");
-    b.type = "button"; b.className = "btn " + (cls || ""); b.textContent = label;
-    b.addEventListener("click", fn);
-    return b;
-  }
-  function para(parts){
-    var p = document.createElement("p");
-    parts.forEach(function(x){ p.appendChild(typeof x === "string" ? document.createTextNode(x) : x); });
-    return p;
-  }
-  function h3(text){ var h = document.createElement("h3"); h.textContent = text; return h; }
+  function tossBtn(label, cls, fn){ return h("button", {type:"button", class:"btn " + (cls || ""), text:label, onclick:fn}); }
+  function para(parts){ return h("p", null, parts); }
 
   function renderToss(){
     var sh = $("tossSheet"); sh.textContent = "";
     if(!toss){ $("ovToss").hidden = true; return; }
-    var t = toss, callerName = t.names[t.caller.team][t.caller.idx];
+    var t = toss, callerName = t.T[t.caller.team].p[t.caller.idx];
     sh.className = "sheet toss-sheet t-" + (t.caller.team === "A" ? 0 : 1);
 
     if(t.step === "call"){
-      sh.appendChild(h3("Coin toss"));
+      sh.appendChild(h("h3", {text:"Coin toss"}));
       sh.appendChild(para(["Caller: ", b(callerName), " (" + tName(t.caller.team) + "). Ask them to pick one, then tap their pick."]));
-      var row = document.createElement("div"); row.className = "toss-tokens";
-      t.tokens.forEach(function(tok, i){
-        row.appendChild(tossBtn(tok, "toss-token", function(){
+      sh.appendChild(h("div", {class:"toss-tokens"}, t.tokens.map(function(tok, i){
+        return tossBtn(tok, "toss-token", function(){
           t.pick = i;
           t.winner = i === t.win ? t.caller.team : other(t.caller.team);
           t.step = "winnerChoice"; renderToss();
-        }));
-      });
-      sh.appendChild(row);
-      var rr = document.createElement("div"); rr.className = "btn-row";
-      rr.appendChild(tossBtn("Pick a different caller", "", function(){ toss = newToss(t.names); renderToss(); }));
-      rr.appendChild(tossBtn("Cancel", "ghost", function(){ toss = null; renderToss(); }));
-      sh.appendChild(rr);
+        });
+      })));
+      sh.appendChild(h("div", {class:"btn-row"}, [
+        tossBtn("Pick a different caller", "", function(){ toss = newToss(t.T); renderToss(); }),
+        tossBtn("Cancel", "ghost", function(){ toss = null; renderToss(); })
+      ]));
     }else{
       var right = t.pick === t.win, w = t.winner, l = other(w);
-      var res = document.createElement("div"); res.className = "toss-reveal";
-      res.appendChild(para([b(callerName), " picked " + t.tokens[t.pick] + ". The winning pick was " + t.tokens[t.win] + ". ", b(right ? "Correct." : "Wrong.")]));
-      res.appendChild(para([b(tName(w) + " wins the toss"), " (" + tPlayers(w) + ")."]));
-      sh.appendChild(res);
-
-      var q = document.createElement("div"); q.className = "btn-row";
+      sh.appendChild(h("div", {class:"toss-reveal"}, [
+        para([b(callerName), " picked " + t.tokens[t.pick] + ". The winning pick was " + t.tokens[t.win] + ". ", b(right ? "Correct." : "Wrong.")]),
+        para([b(tName(w) + " wins the toss"), " (" + tPlayers(w) + ")."])
+      ]));
+      var q = h("div", {class:"btn-row"});
       if(t.step === "winnerChoice"){
-        // Only two choices: serve, or court. Whoever takes the court receives; the other team serves at 0-0-2.
-        sh.appendChild(h3(tName(w) + " chooses"));
+        sh.appendChild(h("h3", {text:tName(w) + " chooses"}));
         q.appendChild(tossBtn("Serve", "primary", function(){ t.serve = w; t.chose = "serve"; t.step = "pickEnd"; renderToss(); }));
         q.appendChild(tossBtn("Court", "", function(){ t.serve = l; t.chose = "court"; t.step = "pickEnd"; renderToss(); }));
       }else if(t.step === "pickEnd"){
         var who = other(t.serve);
-        sh.appendChild(h3(tName(who) + " picks the court"));
+        sh.appendChild(h("h3", {text:tName(who) + " picks the court"}));
         sh.appendChild(para([tName(who) + " receives. " + tName(t.serve) + " serves first. Where does " + tName(who) + " start, seen from your spot at the net post?"]));
         q.appendChild(tossBtn(tName(who) + " on my left", "primary", function(){ t.left = who; t.step = "done"; renderToss(); }));
         q.appendChild(tossBtn(tName(who) + " on my right", "", function(){ t.left = other(who); t.step = "done"; renderToss(); }));
       }else if(t.step === "done"){
-        sh.appendChild(h3("Ready"));
+        sh.appendChild(h("h3", {text:"Ready"}));
         sh.appendChild(para([b(tName(t.serve) + " serves first (0 – 0 – 2)."), " " + tName(other(t.serve)) + " receives. " + tName(t.left) + " starts on your left, " + tName(other(t.left)) + " on your right."]));
         q.appendChild(tossBtn("Use this", "primary", function(){
           setRadio("serveTeam", t.serve); setRadio("leftTeam", t.left); setRadio("firstServe", "2");
-          $("tossResult").textContent = "Toss: " + callerName + " called " + (right ? "right" : "wrong") + ". " + tName(w) + " won and chose " + t.chose + ". " + tName(t.serve) + " serves, " + tName(t.left) + " on your left.";
+          var text = "Coin toss: " + callerName + " (" + tName(t.caller.team) + ") called " + t.tokens[t.pick] + ", winning pick " + t.tokens[t.win] + " (" + (right ? "correct" : "wrong") + "). " +
+            tName(w) + " won and chose " + t.chose + ". " + tName(t.serve) + " serves, " + tName(t.left) + " on the umpire's left.";
+          $("tossResult").textContent = text;
+          tossInfo = text;
           toss = null; renderToss(); toast("Toss applied");
         }));
       }
-      q.appendChild(tossBtn("Start the toss over", "ghost", function(){ toss = newToss(t.names); renderToss(); }));
+      q.appendChild(tossBtn("Start the toss over", "ghost", function(){ toss = newToss(t.T); renderToss(); }));
       sh.appendChild(q);
     }
     $("ovToss").hidden = false;
@@ -707,22 +1143,43 @@ button:disabled{cursor:default}
   /* ================= GAME LOGIC ================= */
   function newGame(cfg){
     return {
-      id: "g" + now().toString(36),
+      id: "m" + uid(),
       createdAt: new Date().toISOString(),
       cfg: cfg,
+      umpire: umpName(),
+      status: "live",
       // score[team]; serving team; server number 1|2; server = player index (0 = baseline, 1 = partner)
       s: {score:[0,0], serving:0, serverNum: cfg.startAt2 ? 2 : 1, server:0, switched:false, over:null, endElapsed:0},
       hist: [],
       last: null,
       notice: null,
       clock: {acc:0, since:null, started:false, timeUp:false},
-      to: {used:[0,0], active:null}
+      to: {used:[0,0], active:null},
+      log: [],
+      seq: 0
     };
+  }
+  // Games started before tournament mode existed lack a few fields.
+  function upgradeGame(g){
+    var c = g.cfg;
+    if(!c.keys) c.keys = c.names && c.names[0] === "Team B" ? ["B", "A"] : ["A", "B"];
+    if(!c.names) c.names = c.keys.map(function(k){ return "Team " + k; });
+    if(!c.teams){
+      c.teams = {};
+      c.keys.forEach(function(k, i){ c.teams[k] = {label:c.names[i], code:null, id:null, p:c.players[i].slice()}; });
+    }
+    if(!c.label) c.label = "Open play · " + c.teams.A.p.join(" / ") + " vs " + c.teams.B.p.join(" / ");
+    if(!c.mode) c.mode = "open";
+    if(!g.log){ g.log = []; g.seq = 0; }
+    if(!g.status) g.status = "live";
+    if(!g.umpire) g.umpire = umpName();
+    return g;
   }
   function save(){ if(G) store.set(K_GAME, G); }
   function name(t, i){ return G.cfg.players[t][i]; }
   function teamLabel(t){ return G.cfg.names ? G.cfg.names[t] : "Team " + (t + 1); }
   function col(t){ return G.cfg.colors ? G.cfg.colors[t] : t; }
+  function idxOf(k){ return G.cfg.keys.indexOf(k); }
 
   // A team's players only swap sides when that team scores, so the baseline
   // player (index 0) is in the right court whenever the team's score is even.
@@ -748,6 +1205,36 @@ button:disabled{cursor:default}
   function clockStart(){ var c = G.clock; if(!c.since){ c.since = now(); c.started = true; } }
   function clockPause(){ var c = G.clock; if(c.since){ c.acc += now() - c.since; c.since = null; } }
 
+  /* ---------- activity log ---------- */
+  function callText(){ var s = G.s; return s.score[s.serving] + "-" + s.score[1 - s.serving] + "-" + s.serverNum; }
+  function scoreText(){
+    var a = idxOf("A"), bb = idxOf("B");
+    return callText() + " (" + teamLabel(a) + " " + G.s.score[a] + ", " + teamLabel(bb) + " " + G.s.score[bb] + ")";
+  }
+  function matchSummary(){
+    var c = G.cfg, s = G.s, a = idxOf("A"), bb = idxOf("B");
+    return {
+      id: G.id, tournament_id: c.tournamentId || null, category_id: c.categoryId || null,
+      team_a: c.teams.A.id || null, team_b: c.teams.B.id || null,
+      mode: c.mode, label: c.label,
+      players: {A:{code:c.teams.A.label, p1:c.teams.A.p[0], p2:c.teams.A.p[1]}, B:{code:c.teams.B.label, p1:c.teams.B.p[0], p2:c.teams.B.p[1]}},
+      umpire: G.umpire, status: G.status,
+      score_a: s.score[a], score_b: s.score[bb],
+      winner: s.over !== null ? c.keys[s.over] : (G.status !== "live" && s.score[a] !== s.score[bb] ? (s.score[a] > s.score[bb] ? "A" : "B") : null),
+      target: c.target, time_limit_min: c.timeLimitMin, duration_ms: Math.round(shownElapsed()),
+      started_at: G.createdAt, ended_at: G.endedAt || null
+    };
+  }
+  function logEvent(kind, detail){
+    if(!G) return;
+    G.seq = (G.seq || 0) + 1;
+    var e = {id: G.id + "-" + G.seq, seq: G.seq, at: new Date().toISOString(), game_ms: Math.round(shownElapsed()),
+             umpire: umpName() || G.umpire, kind: kind, detail: detail, score: scoreText()};
+    G.log.push(e);
+    save();
+    queue(matchSummary(), [e]);
+  }
+
   function canTimeout(t){
     if(!G || G.s.over !== null || G.to.active) return false;
     if(G.to.used[t] >= G.cfg.timeouts) return false;
@@ -760,19 +1247,23 @@ button:disabled{cursor:default}
     if(s.over !== null || G.to.active || t !== s.serving) return;
     var tnow = now(); if(tnow - lastTap < 350) return; lastTap = tnow;   // guard against double taps
 
-    var before = s.score[s.serving] + " – " + s.score[1 - s.serving] + " – " + s.serverNum;
+    var before = callText(), serverName = name(t, s.server), num = s.serverNum;
     G.hist.push({s: clone(s), last: G.last});
     if(G.hist.length > 400) G.hist.shift();
-    if(!G.clock.started) clockStart();
+    if(!G.clock.started){ clockStart(); logEvent("clock", "Clock started (first rally)"); }
 
+    var ev = [];
     if(kind === "point"){
       s.score[t]++;
-      var a = s.score[t], b = s.score[1 - t];
+      var a = s.score[t], o = s.score[1 - t];
       G.last = teamLabel(t) + " +1 point (was " + before + ")";
-      if(a >= G.cfg.target && a - b >= 2){
+      ev.push(["point", teamLabel(t) + " +1 point. " + serverName + " serving (server " + num + ")."]);
+      if(a >= G.cfg.target && a - o >= 2){
         s.over = t; s.endElapsed = elapsed();
+        ev.push(["game_over", teamLabel(t) + " wins " + a + "-" + o + "."]);
       }else if(G.cfg.switchAt && !s.switched && a === G.cfg.switchAt){
         s.switched = true; G.notice = "switch";
+        ev.push(["switch", "Switch ends: " + teamLabel(t) + " reached " + a + "."]);
         vibrate([120, 80, 120]); beep(740, 0.2, 2);
       }
       bump("team" + t);
@@ -780,20 +1271,24 @@ button:disabled{cursor:default}
       if(s.serverNum === 1){
         s.serverNum = 2; s.server = 1 - s.server;
         G.last = teamLabel(t) + " fault, second server (was " + before + ")";
+        ev.push(["fault", teamLabel(t) + " fault. " + serverName + " lost the serve, second server " + name(t, s.server) + "."]);
       }else{
         s.serving = 1 - t; s.serverNum = 1; s.server = rightIdx(s.serving);
         G.last = "Side out to " + teamLabel(s.serving) + " (was " + before + ")";
+        ev.push(["side_out", "Side out. " + serverName + " (" + teamLabel(t) + ") lost the serve. " + teamLabel(s.serving) + " to serve, " + name(s.serving, s.server) + " is server 1."]);
       }
     }
     vibrate(25);
-    save(); render();
+    ev.forEach(function(x){ logEvent(x[0], x[1]); });
+    render();
   }
 
   function undo(){
     if(!G || !G.hist.length || G.to.active) return;
-    var h = G.hist.pop();
-    G.s = h.s; G.last = h.last; G.notice = null;
-    save(); render(); toast("Undone");
+    var what = G.last, h0 = G.hist.pop();
+    G.s = h0.s; G.last = h0.last; G.notice = null;
+    logEvent("undo", "Undo: " + (what || "last action") + ".");
+    render(); toast("Undone");
   }
 
   function bump(id){
@@ -808,38 +1303,55 @@ button:disabled{cursor:default}
     clockPause();
     G.to.used[t]++;
     G.to.active = {team:t, since:now(), resume:wasRunning, done:false};
-    save(); render(); renderTimeout();
+    logEvent("timeout", teamLabel(t) + " timeout started. Game clock paused.");
+    render(); renderTimeout();
   }
   function endTimeout(cancel){
     var a = G.to.active; if(!a) return;
+    var used = fmt(Math.min(TO_MS, now() - a.since));
     if(cancel) G.to.used[a.team] = Math.max(0, G.to.used[a.team] - 1);
     if(a.resume && G.s.over === null) clockStart();
     G.to.active = null;
-    save(); render();
+    logEvent("timeout", cancel ? teamLabel(a.team) + " timeout cancelled (tapped by mistake). Timeout given back."
+                               : teamLabel(a.team) + " timeout ended after " + used + "." + (a.resume ? " Game clock resumed." : ""));
+    render();
   }
 
-  /* ---------- results ---------- */
-  function saveResult(complete){
-    var s = G.s;
-    var winner = s.over !== null ? s.over : (s.score[0] === s.score[1] ? null : (s.score[0] > s.score[1] ? 0 : 1));
-    var res = {
-      id: G.id, date: G.createdAt, players: G.cfg.players, score: s.score.slice(), winner: winner,
-      target: G.cfg.target, durationMs: shownElapsed(), timeouts: G.to.used.slice(), complete: complete,
-      names: [teamLabel(0), teamLabel(1)], colors: [col(0), col(1)]
-    };
-    var list = store.get(K_RES, []);
-    list = list.filter(function(r){ return r.id !== res.id; });
-    list.unshift(res);
-    store.set(K_RES, list);
+  /* ---------- finishing ---------- */
+  function resultText(){
+    var a = idxOf("A"), bb = idxOf("B");
+    return teamLabel(a) + " " + G.s.score[a] + " - " + G.s.score[bb] + " " + teamLabel(bb);
+  }
+  function finish(status, detail){
+    G.status = status; G.endedAt = new Date().toISOString();
+    logEvent(status === "discarded" ? "discard" : "end", detail);
+    if(status !== "discarded"){
+      var res = matchSummary(); res.log = G.log;
+      var list = store.get(K_RES, []).filter(function(r){ return r.id !== res.id; });
+      list.unshift(res);
+      store.set(K_RES, list.slice(0, 150));
+    }
     store.del(K_GAME); G = null;
     $("ovOver").hidden = true; $("ovSwitch").hidden = true;
-    show("setup"); toast("Result saved");
+    scheduleSync(100);
+    show("setup");
+  }
+  function saveResult(complete){
+    finish(complete ? "final" : "ended_early", (complete ? "Result saved: " : "Ended early, score saved: ") + resultText() + ".");
+    toast("Result saved");
   }
 
   /* ================= RENDER ================= */
+  function renderMatchLine(){
+    var ml = $("matchLine"); ml.textContent = "";
+    ml.appendChild(span(G.cfg.label, "ml-label"));
+    var n = pendingCount();
+    ml.appendChild(span(syncState === "auth" ? "Sign in again to upload" : (n ? n + " to upload" : "Saved online"), "ml-sync" + (n ? " pending" : "")));
+  }
   function render(){
     if(!G || screen !== "game") return;
     var s = G.s, rcv = receiver(), lt = leftTeam();
+    renderMatchLine();
 
     // court
     for(var t = 0; t < 2; t++){
@@ -894,8 +1406,7 @@ button:disabled{cursor:default}
       var off = !serving || s.over !== null;
       panel.querySelector('[data-act="point"]').disabled = off;
       panel.querySelector('[data-act="next"]').disabled = off;
-      var left = G.cfg.timeouts - G.to.used[k];
-      panel.querySelector("[data-to]").textContent = "Timeout · " + left + " left";
+      panel.querySelector("[data-to]").textContent = "Timeout · " + (G.cfg.timeouts - G.to.used[k]) + " left";
     }
     renderTimeoutButtons();
 
@@ -916,10 +1427,8 @@ button:disabled{cursor:default}
       var w = s.over, l = 1 - w, f = $("overFinal"); f.textContent = "";
       $("overTitle").textContent = teamLabel(w) + " wins";
       [w, l].forEach(function(t){
-        var nm = document.createElement("span"); nm.className = "nm " + (t === w ? "win" : "lose");
-        nm.textContent = teamLabel(t) + " · " + name(t, 0) + " / " + name(t, 1);
-        var sc = document.createElement("span"); sc.className = "sc " + (t === w ? "win" : "lose"); sc.textContent = s.score[t];
-        f.appendChild(nm); f.appendChild(sc);
+        f.appendChild(span(teamLabel(t) + " · " + name(t, 0) + " / " + name(t, 1), "nm " + (t === w ? "win" : "lose")));
+        f.appendChild(span(String(s.score[t]), "sc " + (t === w ? "win" : "lose")));
       });
       $("overMeta").textContent = "Game time " + fmt(s.endElapsed) + " · timeouts used " + G.to.used[0] + " / " + G.to.used[1];
       $("ovOver").hidden = false;
@@ -928,7 +1437,6 @@ button:disabled{cursor:default}
     renderClock();
     renderTimeout();
   }
-  function b(text){ var e = document.createElement("b"); e.textContent = text; return e; }
   function setEnd(el, t){
     el.className = "end t-" + col(t); el.textContent = "";
     el.appendChild(document.createElement("i"));
@@ -970,15 +1478,17 @@ button:disabled{cursor:default}
     var a = G && G.to.active, ov = $("ovTimeout");
     if(!a || screen !== "game"){ if(!ov.hidden) ov.hidden = true; return; }
     var rem = TO_MS - (now() - a.since);
-    var sheet = $("toSheet");
-    sheet.className = "sheet to-sheet t-" + col(a.team) +(rem <= 0 ? " done" : (rem <= 15000 ? " low" : ""));
+    $("toSheet").className = "sheet to-sheet t-" + col(a.team) + (rem <= 0 ? " done" : (rem <= 15000 ? " low" : ""));
     $("toTitle").textContent = teamLabel(a.team) + " timeout";
     $("toClock").textContent = fmt(Math.max(0, rem), true);
     $("toSub").textContent = rem <= 0 ? "Time in. Call the players back." :
       (a.resume ? "Game clock paused. It resumes when the timeout ends." : "Game clock is paused.");
     $("btnToEnd").textContent = rem <= 0 ? "Resume play" : "End timeout";
     $("btnToCancel").hidden = rem <= 0;
-    if(rem <= 0 && !a.done){ a.done = true; save(); vibrate([300, 150, 300]); beep(660, 0.35, 3); }
+    if(rem <= 0 && !a.done){
+      a.done = true; vibrate([300, 150, 300]); beep(660, 0.35, 3);
+      logEvent("timeout", teamLabel(a.team) + " timeout: 1:00 is up.");
+    }
     if(ov.hidden) ov.hidden = false;
   }
 
@@ -988,66 +1498,321 @@ button:disabled{cursor:default}
     renderTimeoutButtons();
     if(G.to.active) renderTimeout();
     if(limitMs() && !G.clock.timeUp && G.s.over === null && remaining() <= 0){
-      G.clock.timeUp = true; save(); vibrate([400, 200, 400]); beep(520, 0.4, 3); toast("Game time is up");
+      G.clock.timeUp = true; vibrate([400, 200, 400]); beep(520, 0.4, 3); toast("Game time is up");
+      logEvent("time_up", "Time limit reached (" + G.cfg.timeLimitMin + " min).");
     }
   }
   setInterval(tick, 250);
 
-  /* ================= RESULTS SCREEN ================= */
-  var pendingDelete = null;
-  function renderResults(){
-    var list = store.get(K_RES, []), box = $("resList");
-    box.textContent = "";
-    if(!list.length){
-      var e = document.createElement("div"); e.className = "empty";
-      e.textContent = "No saved games yet. Finished games appear here after you tap Save result.";
-      box.appendChild(e);
-    }
-    list.forEach(function(r){
-      var card = document.createElement("div"); card.className = "res";
-      var meta = document.createElement("div"); meta.className = "res-meta";
-      var d = new Date(r.date);
-      var ds = isNaN(d) ? "" : d.toLocaleString([], {month:"short", day:"numeric", hour:"numeric", minute:"2-digit"});
-      meta.appendChild(span(ds));
-      meta.appendChild(span("To " + r.target + " · " + fmt(r.durationMs || 0) + " · TO " + r.timeouts[0] + "/" + r.timeouts[1]));
-      card.appendChild(meta);
-      [0, 1].forEach(function(t){
-        var row = document.createElement("div");
-        row.className = "res-row t-" + (r.colors ? r.colors[t] : t) + (r.winner === t ? " win" : (r.winner === null ? "" : " lose"));
-        row.appendChild(document.createElement("i"));
-        row.appendChild(span((r.names ? r.names[t] + ": " : "") + r.players[t][0] + " / " + r.players[t][1], "nm"));
-        row.appendChild(span(String(r.score[t]), "sc"));
-        card.appendChild(row);
-      });
-      var foot = document.createElement("div"); foot.className = "res-foot";
-      if(!r.complete){ foot.appendChild(span("Ended early", "chip")); } else foot.appendChild(span(""));
-      var del = document.createElement("button"); del.type = "button"; del.className = "btn ghost";
-      del.textContent = pendingDelete === r.id ? "Tap again to delete" : "Delete";
-      if(pendingDelete === r.id) del.className = "btn danger";
-      del.addEventListener("click", function(){
-        if(pendingDelete === r.id){
-          store.set(K_RES, store.get(K_RES, []).filter(function(x){ return x.id !== r.id; }));
-          pendingDelete = null; toast("Result deleted");
-        }else pendingDelete = r.id;
-        renderResults();
-      });
-      foot.appendChild(del);
-      card.appendChild(foot);
-      box.appendChild(card);
+  /* ================= MATCHES ================= */
+  var serverMatches = null, matchesState = "idle";
+  // Older results saved before logging existed use a different shape.
+  function normalize(r){
+    if(r.score_a !== undefined) return r;
+    var n = r.names || ["Team 1", "Team 2"], aFirst = n[0] !== "Team B";
+    var ia = aFirst ? 0 : 1, ib = 1 - ia;
+    return {id:r.id, label:"Open play · " + n.join(" vs "), mode:"open",
+      players:{A:{code:n[ia], p1:r.players[ia][0], p2:r.players[ia][1]}, B:{code:n[ib], p1:r.players[ib][0], p2:r.players[ib][1]}},
+      score_a:r.score[ia], score_b:r.score[ib], winner: r.winner === null ? null : (r.winner === ia ? "A" : "B"),
+      status: r.complete ? "final" : "ended_early", started_at:r.date, duration_ms:r.durationMs, umpire:null, log:null};
+  }
+  function showMatches(){
+    renderMatches();
+    var u = ump(); if(!u) return;
+    matchesState = "loading"; renderMatches();
+    rpc("pb_matches", {p_pass:u.pass}).then(function(list){
+      serverMatches = list || []; matchesState = "ok";
+    }).catch(function(){ matchesState = "offline"; }).then(function(){ if(screen === "results") renderMatches(); });
+  }
+  function allMatches(){
+    var map = {}, out = outbox();
+    (serverMatches || []).forEach(function(m){ map[m.id] = m; });
+    store.get(K_RES, []).forEach(function(r){
+      var m = normalize(r); map[m.id] = Object.assign({}, map[m.id] || {}, m);
     });
-    if(list.length){
-      var clr = document.createElement("button"); clr.type = "button"; clr.className = "btn ghost";
-      clr.textContent = "Delete all results";
-      clr.addEventListener("click", function(){
-        modal("Delete all results?", "This removes all " + list.length + " saved games from this phone.", [
-          {label:"Delete all", cls:"danger", fn:function(){ store.del(K_RES); renderResults(); toast("All results deleted"); }},
-          {label:"Keep them", cls:""}
+    Object.keys(out).forEach(function(id){
+      if(out[id].match.status === "discarded"){ delete map[id]; return; }
+      if(!map[id]) map[id] = out[id].match;
+    });
+    if(G){ var cur = matchSummary(); cur.log = G.log; cur.current = true; map[G.id] = cur; }
+    return Object.keys(map).map(function(k){ return map[k]; })
+      .sort(function(x, y){ return (y.started_at || "").localeCompare(x.started_at || ""); });
+  }
+  function renderMatches(){
+    var box = $("resList"), out = outbox();
+    box.textContent = "";
+    $("resSub").textContent = matchesState === "loading" ? "Loading all umpires' matches…" :
+      matchesState === "offline" ? "Offline: showing matches saved on this phone" : "All umpires";
+    var list = allMatches();
+    if(!list.length){
+      box.appendChild(h("div", {class:"empty", text:"No matches yet. Finished games appear here after you tap Save result."}));
+      return;
+    }
+    list.forEach(function(m){
+      var chips = [];
+      if(m.current) chips.push(span("This game", "chip live"));
+      else if(m.status === "live") chips.push(span("Live", "chip live"));
+      if(m.status === "ended_early") chips.push(span("Ended early", "chip"));
+      if(out[m.id]) chips.push(span("Not uploaded yet", "chip"));
+      var rows = ["A", "B"].map(function(k){
+        var p = (m.players && m.players[k]) || {code:"Team " + k, p1:"", p2:""};
+        var sc = k === "A" ? m.score_a : m.score_b;
+        return h("div", {class:"res-row t-" + (k === "A" ? 0 : 1) + (m.winner === k ? " win" : (m.winner ? " lose" : ""))}, [
+          h("i"), span(p.code + " · " + p.p1 + " / " + p.p2, "nm"), span(String(sc), "sc")
         ]);
       });
-      box.appendChild(clr);
-    }
+      box.appendChild(h("div", {class:"res"}, [
+        h("div", {class:"res-title", text:m.label || "Match"}),
+        h("div", {class:"res-meta"}, [
+          span(shortDate(m.started_at)),
+          span((m.duration_ms ? fmt(m.duration_ms) : "") + (m.umpire ? " · " + m.umpire : ""))
+        ])
+      ].concat(rows).concat([
+        h("div", {class:"res-foot"}, [
+          h("div", {class:"chips"}, chips),
+          h("button", {type:"button", class:"btn", text:"View log", onclick:function(){ openLog(m); }})
+        ])
+      ])));
+    });
   }
-  function span(text, cls){ var e = document.createElement("span"); if(cls) e.className = cls; e.textContent = text; return e; }
+
+  /* ---------- match log ---------- */
+  var logMatch = null, logRows = [];
+  function openLog(m){
+    logMatch = m; logRows = m.log ? m.log.slice() : [];
+    backTo = screen;
+    show("log");
+    renderLog(m.log ? "" : "Loading log…");
+    if(m.log && !m.current) return;
+    if(m.current) return;
+    var u = ump(); if(!u) return;
+    rpc("pb_match_log", {p_pass:u.pass, p_match_id:m.id}).then(function(rows){
+      var seen = {}; logRows = [];
+      (rows || []).concat((outbox()[m.id] || {events:[]}).events).forEach(function(e){ if(!seen[e.id]){ seen[e.id] = 1; logRows.push(e); } });
+      logRows.sort(function(x, y){ return x.seq - y.seq; });
+      renderLog("");
+    }).catch(function(){ renderLog("Can't load this log right now. Check your internet and try again."); });
+  }
+  function renderLog(msg){
+    var m = logMatch;
+    $("logSub").textContent = m.label || "";
+    var head = $("logHead"); head.textContent = "";
+    var pa = (m.players && m.players.A) || {}, pb = (m.players && m.players.B) || {};
+    head.appendChild(h("div", {class:"log-score"}, [
+      span(pa.code + " " + m.score_a, m.winner === "A" ? "win" : ""), span(" – "), span(m.score_b + " " + pb.code, m.winner === "B" ? "win" : "")
+    ]));
+    head.appendChild(h("p", {class:"hint", text:(m.umpire ? "Umpire " + m.umpire + " · " : "") + shortDate(m.started_at) + (m.duration_ms ? " · " + fmt(m.duration_ms) : "")}));
+    var list = $("logList"); list.textContent = "";
+    $("logCopyBox").hidden = true;
+    if(msg){ list.appendChild(h("li", {class:"empty", text:msg})); return; }
+    if(!logRows.length){ list.appendChild(h("li", {class:"empty", text:"No log entries for this match. It was saved before logging was added."})); return; }
+    logRows.forEach(function(e){
+      list.appendChild(h("li", {class:"log-row k-" + e.kind}, [
+        h("div", {class:"log-when"}, [span(clockTime(e.at), "log-time"), span(fmt(e.game_ms || 0), "log-gc")]),
+        h("div", {class:"log-what"}, [
+          h("div", {class:"log-detail", text:e.detail}),
+          h("div", {class:"log-meta", text:(e.score || "") + (e.umpire ? " · " + e.umpire : "")})
+        ])
+      ]));
+    });
+  }
+  function logAsText(){
+    var m = logMatch;
+    var lines = [m.label, "Umpire: " + (m.umpire || ""), "Time\tGame clock\tUmpire\tWhat happened\tScore"];
+    logRows.forEach(function(e){ lines.push([clockTime(e.at), fmt(e.game_ms || 0), e.umpire || "", e.detail, e.score || ""].join("\t")); });
+    return lines.join("\n");
+  }
+  $("btnCopyLog").addEventListener("click", function(){
+    var text = logAsText(), box = $("logCopyBox");
+    function fallback(){ box.value = text; box.hidden = false; box.focus(); box.select(); toast("Select all and copy"); }
+    try{
+      navigator.clipboard.writeText(text).then(function(){ toast("Log copied. Paste it into Sheets, Excel or a message."); }, fallback);
+    }catch(e){ fallback(); }
+  });
+  $("btnLogBack").addEventListener("click", function(){ show(backTo === "game" && G ? "game" : (backTo === "log" ? "results" : backTo)); });
+
+  /* ================= TEAMS ADMIN ================= */
+  var adminOpen = null, adminEdit = null, adminDel = null, adminNewTour = false;
+  function codeFor(nameText){
+    var w = nameText.replace(/['’]/g, "").replace(/[^A-Za-z0-9 ]/g, " ").trim().split(/\s+/).filter(Boolean);
+    var c = w.map(function(x){ return /^\d/.test(x) ? x.replace(/\D.*/, "") : x[0]; }).join("").toUpperCase().slice(0, 4);
+    return c || "CAT";
+  }
+  function nextTeamCode(cat){
+    var max = 0, re = new RegExp("^" + cat.code.replace(/[^A-Za-z0-9]/g, "") + "-(\\d+)$", "i");
+    teamsOf(cat.id).forEach(function(t){ var m = re.exec(t.code); if(m) max = Math.max(max, +m[1]); });
+    var n = max + 1;
+    return cat.code + "-" + (n < 10 ? "0" : "") + n;
+  }
+  function adminCall(btn, fn, args, okMsg){
+    var u = ump(); if(!u) return Promise.reject();
+    if(btn){ btn.disabled = true; btn.dataset.label = btn.textContent; btn.textContent = "Saving…"; }
+    return rpc(fn, Object.assign({p_pass:u.pass}, args)).then(function(r){
+      return loadData().then(function(){ renderAdmin(); if(okMsg) toast(okMsg); return r; });
+    }).catch(function(err){
+      if(btn){ btn.disabled = false; btn.textContent = btn.dataset.label; }
+      toast(err && err.auth ? "Password rejected. Sign in again." : "Couldn't save. Check your internet and try again.");
+      throw err;
+    });
+  }
+  function field(id, labelText, value, placeholder){
+    return h("div", {class:"field"}, [
+      h("label", {for:id, text:labelText}),
+      h("input", {type:"text", id:id, value:value || "", placeholder:placeholder || "", autocomplete:"off", autocapitalize:"words"})
+    ]);
+  }
+  function val(id){ var e = $(id); return e ? e.value.trim() : ""; }
+
+  function renderAdmin(){
+    var box = $("adminBody"); box.textContent = "";
+    var d = data(), tour = curTour();
+    if(dataState === "offline") box.appendChild(h("p", {class:"err", text:"You're offline. Changes to teams need internet."}));
+
+    // tournament
+    var tc = h("div", {class:"card"}, [h("h2", {text:"Tournament"})]);
+    if(!tour || adminNewTour){
+      tc.appendChild(field("adTourName", "Tournament name", "", "e.g. Summer Open 2026"));
+      var row = h("div", {class:"btn-pair"});
+      row.appendChild(h("button", {type:"button", class:"btn primary", text:"Create tournament", onclick:function(e){
+        var n = val("adTourName"); if(!n){ toast("Enter a tournament name"); return; }
+        var id = crypto.randomUUID ? crypto.randomUUID() : null;
+        adminCall(e.target, "pb_save", {p_kind:"tournament", p_row:{id:id, name:n, created_by:umpName()}}).then(function(r){
+          store.set(K_TOUR, r.id); adminNewTour = false; renderAdmin(); toast("Tournament created");
+        });
+      }}));
+      if(tour) row.appendChild(h("button", {type:"button", class:"btn ghost", text:"Cancel", onclick:function(){ adminNewTour = false; renderAdmin(); }}));
+      tc.appendChild(row);
+    }else{
+      if(d.tournaments.length > 1){
+        var sel = h("select", {id:"adTourSel", onchange:function(){ store.set(K_TOUR, this.value); renderAdmin(); }},
+          d.tournaments.map(function(t){ return option(t.id, t.name); }));
+        sel.value = tour.id;
+        tc.appendChild(h("div", {class:"field"}, [h("label", {for:"adTourSel", text:"Working on"}), sel]));
+      }
+      tc.appendChild(field("adTourRename", "Name", tour.name));
+      tc.appendChild(h("div", {class:"btn-pair"}, [
+        h("button", {type:"button", class:"btn", text:"Save name", onclick:function(e){
+          var n = val("adTourRename"); if(!n) return;
+          adminCall(e.target, "pb_save", {p_kind:"tournament", p_row:{id:tour.id, name:n}}, "Name saved");
+        }}),
+        h("button", {type:"button", class:"btn ghost", text:"New tournament", onclick:function(){ adminNewTour = true; renderAdmin(); }})
+      ]));
+    }
+    box.appendChild(tc);
+    if(!tour) return;
+
+    // categories with their teams
+    catsOf(tour.id).forEach(function(cat){ box.appendChild(categoryCard(cat)); });
+
+    // add a category
+    var ac = h("div", {class:"card"}, [h("h2", {text:"Add category"})]);
+    ac.appendChild(h("div", {class:"grid2"}, [
+      field("adCatName", "Category name", "", "e.g. Men's Doubles"),
+      field("adCatCode", "Code for team numbers", "", "Auto, e.g. MD")
+    ]));
+    ac.appendChild(h("button", {type:"button", class:"btn primary", text:"Add category", onclick:function(e){
+      var n = val("adCatName"); if(!n){ toast("Enter a category name"); return; }
+      var code = (val("adCatCode") || codeFor(n)).toUpperCase().replace(/\s+/g, "");
+      adminCall(e.target, "pb_save", {p_kind:"category", p_row:{tournament_id:tour.id, name:n, code:code}}).then(function(r){
+        adminOpen = r.id; renderAdmin(); toast("Category added");
+      });
+    }}));
+    box.appendChild(ac);
+  }
+
+  function categoryCard(cat){
+    var teams = teamsOf(cat.id);
+    var det = h("details", {class:"card cat-card", open: adminOpen === cat.id}, [
+      h("summary", null, [span(cat.name, "cat-name"), span(cat.code + " · " + teams.length + " team" + (teams.length === 1 ? "" : "s"), "cat-meta")])
+    ]);
+    det.addEventListener("toggle", function(){ if(det.open) adminOpen = cat.id; else if(adminOpen === cat.id) adminOpen = null; });
+
+    var list = h("div", {class:"team-list"});
+    if(!teams.length) list.appendChild(h("p", {class:"hint", text:"No teams yet. Add them below."}));
+    teams.forEach(function(t){
+      if(adminEdit === t.id){
+        list.appendChild(h("div", {class:"team-edit"}, [
+          h("div", {class:"grid3"}, [field("edCode", "Code", t.code), field("edP1", "Player 1", t.player1), field("edP2", "Player 2", t.player2)]),
+          h("div", {class:"btn-pair"}, [
+            h("button", {type:"button", class:"btn primary", text:"Save", onclick:function(e){
+              var p1 = val("edP1"), p2 = val("edP2"), code = val("edCode").toUpperCase();
+              if(!p1 || !p2 || !code){ toast("Fill in the code and both players"); return; }
+              adminCall(e.target, "pb_save", {p_kind:"team", p_row:{id:t.id, category_id:cat.id, code:code, player1:p1, player2:p2}}).then(function(){ adminEdit = null; renderAdmin(); toast("Team saved"); });
+            }}),
+            h("button", {type:"button", class:"btn ghost", text:"Cancel", onclick:function(){ adminEdit = null; renderAdmin(); }})
+          ])
+        ]));
+        return;
+      }
+      var del = adminDel === t.id;
+      list.appendChild(h("div", {class:"team-row"}, [
+        span(t.code, "tr-code"), span(t.player1 + " / " + t.player2, "tr-names"),
+        h("button", {type:"button", class:"btn small", text:"Edit", onclick:function(){ adminEdit = t.id; adminDel = null; renderAdmin(); }}),
+        h("button", {type:"button", class:"btn small " + (del ? "danger" : "ghost"), text:del ? "Confirm" : "Delete", onclick:function(e){
+          if(!del){ adminDel = t.id; renderAdmin(); return; }
+          adminCall(e.target, "pb_delete", {p_kind:"team", p_id:t.id}, "Team deleted").then(function(){ adminDel = null; });
+        }})
+      ]));
+    });
+    det.appendChild(list);
+
+    // add one team
+    var pre = "ad" + cat.id.slice(0, 8);
+    det.appendChild(h("div", {class:"sub-card"}, [
+      h("h4", {text:"Add team " + nextTeamCode(cat)}),
+      h("div", {class:"grid2"}, [field(pre + "p1", "Player 1", "", "e.g. Santos"), field(pre + "p2", "Player 2", "", "e.g. Reyes")]),
+      h("button", {type:"button", class:"btn primary", text:"Add team", onclick:function(e){
+        var p1 = val(pre + "p1"), p2 = val(pre + "p2");
+        if(!p1 || !p2){ toast("Enter both players"); return; }
+        adminCall(e.target, "pb_save", {p_kind:"team", p_row:{category_id:cat.id, code:nextTeamCode(cat), player1:p1, player2:p2}}, "Team added");
+      }})
+    ]));
+
+    // paste many teams
+    det.appendChild(h("div", {class:"sub-card"}, [
+      h("h4", {text:"Paste many teams"}),
+      h("p", {class:"hint", text:"One team per line: Player 1, Player 2. Codes are numbered for you."}),
+      h("textarea", {id:pre + "bulk", rows:"4", placeholder:"Santos, Reyes\nGarcia, Lim"}),
+      h("button", {type:"button", class:"btn", text:"Add all", onclick:function(e){
+        var lines = $(pre + "bulk").value.split(/\r?\n/).map(function(l){ return l.trim(); }).filter(Boolean);
+        var rows = [], bad = [];
+        lines.forEach(function(l){
+          var p = l.split(/\s*[,\t;]\s*|\s+\/\s+/).filter(Boolean);
+          if(p.length >= 2) rows.push([p[0], p[1]]); else bad.push(l);
+        });
+        if(bad.length){ toast("Each line needs two names separated by a comma: " + bad[0]); return; }
+        if(!rows.length) return;
+        var btn = e.target, u = ump(), start = nextTeamCode(cat), n = toInt(start.split("-").pop(), 1);
+        btn.disabled = true; btn.textContent = "Adding " + rows.length + "…";
+        var chain = Promise.resolve();
+        rows.forEach(function(r, i){
+          var num = n + i, code = cat.code + "-" + (num < 10 ? "0" : "") + num;
+          chain = chain.then(function(){ return rpc("pb_save", {p_pass:u.pass, p_kind:"team", p_row:{category_id:cat.id, code:code, player1:r[0], player2:r[1]}}); });
+        });
+        chain.then(function(){ return loadData(); }).then(function(){ renderAdmin(); toast(rows.length + " teams added"); })
+          .catch(function(){ loadData().then(renderAdmin); toast("Some teams didn't save. Check your internet and try again."); });
+      }})
+    ]));
+
+    // category settings
+    var delCat = adminDel === cat.id;
+    det.appendChild(h("div", {class:"sub-card"}, [
+      h("h4", {text:"Category"}),
+      h("div", {class:"grid2"}, [field(pre + "cn", "Name", cat.name), field(pre + "cc", "Code", cat.code)]),
+      h("div", {class:"btn-pair"}, [
+        h("button", {type:"button", class:"btn", text:"Save category", onclick:function(e){
+          var n = val(pre + "cn"), c = val(pre + "cc").toUpperCase().replace(/\s+/g, "");
+          if(!n || !c) return;
+          adminCall(e.target, "pb_save", {p_kind:"category", p_row:{id:cat.id, tournament_id:cat.tournament_id, name:n, code:c}}, "Category saved");
+        }}),
+        h("button", {type:"button", class:"btn " + (delCat ? "danger" : "ghost"), text:delCat ? "Delete it and its teams" : "Delete category", onclick:function(e){
+          if(!delCat){ adminDel = cat.id; renderAdmin(); return; }
+          adminCall(e.target, "pb_delete", {p_kind:"category", p_id:cat.id}, "Category deleted").then(function(){ adminDel = null; });
+        }})
+      ])
+    ]));
+    return det;
+  }
 
   /* ================= WIRING ================= */
   document.querySelectorAll("[data-act]").forEach(function(btn){
@@ -1064,15 +1829,22 @@ button:disabled{cursor:default}
   $("btnToCancel").addEventListener("click", function(){ endTimeout(true); toast("Timeout cancelled"); });
   $("btnClock").addEventListener("click", function(){
     if(!G || G.s.over !== null || G.to.active) return;
-    if(G.clock.since) clockPause(); else clockStart();
-    save(); renderClock();
+    var c = G.clock;
+    if(c.since){ clockPause(); logEvent("clock", "Clock paused."); }
+    else { var first = !c.started; clockStart(); logEvent("clock", first ? "Clock started." : "Clock resumed."); }
+    renderClock();
   });
-  $("btnResults1").addEventListener("click", function(){ show("results"); });
-  $("btnBack").addEventListener("click", function(){ pendingDelete = null; show(G ? "game" : "setup"); });
+  $("btnResults1").addEventListener("click", function(){ backTo = "setup"; show("results"); });
+  $("btnAdmin").addEventListener("click", function(){ adminEdit = adminDel = null; show("admin"); loadData(); });
+  $("btnAdminBack").addEventListener("click", function(){ show("setup"); });
+  $("btnBack").addEventListener("click", function(){ show(G ? "game" : "setup"); });
   $("btnMenu").addEventListener("click", function(){
-    modal("Menu", "", [
-      {label:"Mirror court view (I moved to the other post)", fn:function(){ G.cfg.team1Left = !G.cfg.team1Left; save(); render(); toast("Court view mirrored"); }},
-      {label:"Results", fn:function(){ show("results"); }},
+    modal("Menu", G.cfg.label, [
+      {label:"Match log", fn:function(){ var m = matchSummary(); m.log = G.log; m.current = true; openLog(m); }},
+      {label:"Mirror court view (I moved to the other post)", fn:function(){
+        G.cfg.team1Left = !G.cfg.team1Left; logEvent("view", "Court view mirrored (umpire moved to the other post)."); render(); toast("Court view mirrored");
+      }},
+      {label:"All matches", fn:function(){ backTo = "game"; show("results"); }},
       {label:"End game and save score", fn:function(){
         modal("End game now?", "The current score is saved as ended early.", [
           {label:"End and save", cls:"primary", fn:function(){ saveResult(G.s.over !== null); }},
@@ -1080,8 +1852,8 @@ button:disabled{cursor:default}
         ]);
       }},
       {label:"Discard game", cls:"danger", fn:function(){
-        modal("Discard this game?", "The score is not saved.", [
-          {label:"Discard", cls:"danger", fn:function(){ store.del(K_GAME); G = null; show("setup"); toast("Game discarded"); }},
+        modal("Discard this game?", "The score is not kept as a result. The log still records that it was discarded.", [
+          {label:"Discard", cls:"danger", fn:function(){ finish("discarded", "Game discarded at " + resultText() + "."); toast("Game discarded"); }},
           {label:"Keep playing"}
         ]);
       }},
@@ -1090,10 +1862,13 @@ button:disabled{cursor:default}
   });
 
   /* ================= BOOT ================= */
-  function start(data){
-    var g = (data && data.G) || store.get(K_GAME, null);
-    if(g && g.cfg && g.s){ G = g; show("game"); }
-    else show("setup");
+  function start(saved){
+    var g = (saved && saved.G) || store.get(K_GAME, null);
+    if(g && g.cfg && g.s) G = upgradeGame(g);
+    if(!ump()){ show("login"); return; }
+    show(G ? "game" : "setup");
+    loadData();
+    scheduleSync(500);
   }
   try{ window.claude && window.claude.hot && window.claude.hot.snapshot && window.claude.hot.snapshot(function(){ return {G:G}; }); }catch(e){}
   var hot = window.claude && window.claude.hot;
