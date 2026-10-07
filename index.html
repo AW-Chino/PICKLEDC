@@ -211,6 +211,12 @@ textarea{resize:vertical;min-height:90px}
 .ml-label{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600;color:var(--fg)}
 .ml-sync{flex:none}
 .ml-sync.pending{color:var(--warn)}
+.ml-sync.live{color:var(--t1);font-weight:700}
+/* Watching another umpire's match: read-only */
+body.viewing .score-btns,body.viewing .btn-to,body.viewing #btnUndo,body.viewing #btnClock,
+body.viewing #ovTimeout .btn-row{display:none}
+body.viewing #ovTimeout{pointer-events:none;background:transparent}
+body.viewing .bottombar{min-height:0}
 .res-title{font-weight:700}
 .chips{display:flex;gap:6px;flex-wrap:wrap}
 .chip.live{background:var(--t1-soft);color:var(--fg)}
@@ -596,7 +602,7 @@ textarea{resize:vertical;min-height:90px}
   var SB_KEY = "sb_publishable_KBlXyV-97uKlwqWxAIbRGA_HXnJHnvb";
 
   var K_SETUP = "pbu.setup", K_GAME = "pbu.game", K_RES = "pbu.results";
-  var K_UMP = "pbu.umpire", K_DATA = "pbu.data", K_TOUR = "pbu.tournament", K_OUT = "pbu.outbox";
+  var K_UMP = "pbu.umpire", K_DATA = "pbu.data", K_TOUR = "pbu.tournament", K_OUT = "pbu.outbox", K_DEV = "pbu.device";
   var store = {
     get: function(k, d){ try{ var v = localStorage.getItem(k); return v ? JSON.parse(v) : d; }catch(e){ return d; } },
     set: function(k, v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} },
@@ -606,10 +612,14 @@ textarea{resize:vertical;min-height:90px}
   var TO_MS = 60000, LOCK_MS = 120000;
 
   var G = null;          // current game, persisted on every change
+  var viewing = null;    // set while watching someone else's live match; G then holds their read-only state
   var screen = "setup";
   var lastTap = 0;
 
   function now(){ return Date.now(); }
+  // Identifies this phone. A match can only be scored from the phone that owns it.
+  var DEV = store.get(K_DEV, null);
+  if(!DEV){ DEV = "d" + Date.now().toString(36) + Math.random().toString(36).slice(2, 8); store.set(K_DEV, DEV); }
   function clone(o){ return JSON.parse(JSON.stringify(o)); }
   function clamp(n, a, b){ return Math.max(a, Math.min(b, n)); }
   function toInt(v, d){ var n = parseInt(v, 10); return isNaN(n) ? d : n; }
@@ -712,6 +722,7 @@ textarea{resize:vertical;min-height:90px}
           if(!r.ok){
             var err = new Error((j && j.message) || ("HTTP " + r.status));
             err.status = r.status; err.auth = /wrong password/i.test(err.message);
+            err.takenOver = /taken over by/i.test(err.message);
             throw err;
           }
           return j;
@@ -791,11 +802,22 @@ textarea{resize:vertical;min-height:90px}
       sync();
     }).catch(function(err){
       syncing = false;
+      if(err.takenOver){ lostMatch(id, err.message); sync(); return; }
       syncState = err.auth ? "auth" : "offline";
       if(err.auth) authLost();
       updateSyncLine();
       scheduleSync(15000);
     });
+  }
+  // Another umpire took over this match (this phone stopped scoring it). Stop sending and hand back control.
+  function lostMatch(id, message){
+    var o = outbox(); delete o[id]; store.set(K_OUT, o);
+    if(!G || G.id !== id || viewing) return;
+    var who = (message.match(/taken over by (.+)/i) || [])[1] || "another umpire";
+    store.del(K_GAME); G = null;
+    $("ovOver").hidden = true; $("ovSwitch").hidden = true; $("ovTimeout").hidden = true;
+    show("setup");
+    modal("Scoring moved to another phone", who + " took over scoring this match. This phone can no longer change its score. You can still watch it live from Matches.", [{label:"OK", cls:"primary"}]);
   }
   window.addEventListener("online", function(){ scheduleSync(200); loadData(); });
   setInterval(function(){ if(!syncing && Object.keys(outbox()).length) sync(); }, 20000);
@@ -914,7 +936,7 @@ textarea{resize:vertical;min-height:90px}
     var prev = keep ? sel.value : "";
     sel.textContent = "";
     opts.forEach(function(o){ sel.appendChild(o); });
-    if(prev && opts.some(function(o){ return o.value === prev; })) sel.value = prev;
+    if(prev && opts.some(function(o){ return o.value === prev && !o.disabled; })) sel.value = prev;
   }
   function fillTourSetup(){
     var d = data(), tour = curTour();
@@ -936,15 +958,28 @@ textarea{resize:vertical;min-height:90px}
     if(!$("selCat").value && cats.length === 1) $("selCat").value = cats[0].id;
     fillTeams();
   }
+  // Teams in a live match on another phone, keyed by team id.
+  function busyTeams(){
+    var busy = {};
+    (data().live || []).forEach(function(m){
+      if(m.device_id === DEV) return;
+      [m.team_a, m.team_b].forEach(function(t){ if(t) busy[t] = m; });
+    });
+    return busy;
+  }
   function fillTeams(){
-    var teams = $("selCat").value ? teamsOf($("selCat").value) : [];
+    var teams = $("selCat").value ? teamsOf($("selCat").value) : [], busy = busyTeams();
     ["selTeamA", "selTeamB"].forEach(function(id){
       fillSelect($(id), [option("", teams.length ? "Choose team" : "Choose a category first")].concat(teams.map(function(t){
-        return option(t.id, t.code + " · " + t.player1 + " / " + t.player2);
+        var o = option(t.id, t.code + " · " + t.player1 + " / " + t.player2);
+        if(busy[t.id]){ o.disabled = true; o.textContent += " (in a match, " + busy[t.id].umpire + ")"; }
+        return o;
       })), true);
     });
     refreshLabels();
   }
+  // Keep the busy-team list fresh while someone is setting up a match.
+  setInterval(function(){ if(screen === "setup" && ump() && navigator.onLine !== false) loadData(); }, 20000);
   $("selTour").addEventListener("change", function(){ store.set(K_TOUR, $("selTour").value); fillTourSetup(); });
   $("selCat").addEventListener("change", function(){ clearToss(); fillTeams(); });
   ["selTeamA", "selTeamB"].forEach(function(id){
@@ -1042,15 +1077,37 @@ textarea{resize:vertical;min-height:90px}
       startAt2: raw.startAt2,
       team1Left: serveA === leftA
     };
-    G = newGame(cfg);
     var leftKey = leftA ? "A" : "B";
-    logEvent("start", "Match started: " + label + ". " +
+    var startText = "Match started: " + label + ". " +
       "Baselines: " + A.label + " " + ordered(A)[0] + ", " + B.label + " " + ordered(B)[0] + ". " +
       T[keys[0]].label + " serves first, " + T[leftKey].label + " on the umpire's left. " +
       "Game to " + target + ", " + (raw.timeLimitMin ? raw.timeLimitMin + " min time limit" : "no time limit") +
       (raw.switchAt ? ", switch ends at " + raw.switchAt : "") + "." +
-      (tossInfo ? " " + tossInfo : " No coin toss."));
-    show("game");
+      (tossInfo ? " " + tossInfo : " No coin toss.");
+    var game = newGame(cfg);
+    function begin(note){
+      G = game;
+      logEvent("start", startText + (note ? " " + note : ""));
+      show("game");
+    }
+    if(mode() !== "tournament"){ begin(); return; }
+
+    // Tournament matches claim both teams on the server first, so no other umpire can use them.
+    var btn = $("btnStart"), u = ump();
+    btn.disabled = true; btn.textContent = "Checking teams…";
+    G = game; var summary = matchSummary(); G = null;
+    rpc("pb_start_match", {p_pass:u.pass, p_match:summary}).then(function(r){
+      if(r && r.ok){ begin(); return; }
+      var busy = [A, B].filter(function(t){ return r && (t.id === r.team_a || t.id === r.team_b); }).map(function(t){ return t.label; });
+      setupError((busy.join(" and ") || "A team") + (busy.length > 1 ? " are" : " is") + " already in a live match (" + (r.label || "") + ", umpire " + (r.umpire || "unknown") + "). Choose another team, or wait for that match to finish.");
+      loadData();
+    }).catch(function(err){
+      if(err.auth){ setupError("The tournament password changed. Sign out and sign in again."); return; }
+      modal("Can't check the teams", "There's no internet, so the app can't lock these teams for you. If you start anyway, another umpire could pick the same team until your phone is back online.", [
+        {label:"Start anyway", cls:"primary", fn:function(){ begin("Started offline: teams were not locked."); }},
+        {label:"Wait"}
+      ]);
+    }).then(function(){ btn.disabled = false; btn.textContent = "Start game"; });
   });
 
   /* ---------- coin toss ---------- */
@@ -1147,6 +1204,7 @@ textarea{resize:vertical;min-height:90px}
       createdAt: new Date().toISOString(),
       cfg: cfg,
       umpire: umpName(),
+      device: DEV,
       status: "live",
       // score[team]; serving team; server number 1|2; server = player index (0 = baseline, 1 = partner)
       s: {score:[0,0], serving:0, serverNum: cfg.startAt2 ? 2 : 1, server:0, switched:false, over:null, endElapsed:0},
@@ -1175,7 +1233,7 @@ textarea{resize:vertical;min-height:90px}
     if(!g.umpire) g.umpire = umpName();
     return g;
   }
-  function save(){ if(G) store.set(K_GAME, G); }
+  function save(){ if(G && !viewing) store.set(K_GAME, G); }
   function name(t, i){ return G.cfg.players[t][i]; }
   function teamLabel(t){ return G.cfg.names ? G.cfg.names[t] : "Team " + (t + 1); }
   function col(t){ return G.cfg.colors ? G.cfg.colors[t] : t; }
@@ -1222,13 +1280,20 @@ textarea{resize:vertical;min-height:90px}
       score_a: s.score[a], score_b: s.score[bb],
       winner: s.over !== null ? c.keys[s.over] : (G.status !== "live" && s.score[a] !== s.score[bb] ? (s.score[a] > s.score[bb] ? "A" : "B") : null),
       target: c.target, time_limit_min: c.timeLimitMin, duration_ms: Math.round(shownElapsed()),
-      started_at: G.createdAt, ended_at: G.endedAt || null
+      started_at: G.createdAt, ended_at: G.endedAt || null,
+      device_id: G.device || DEV, state: snapshot()
     };
   }
+  // Everything a live viewer needs to draw the scoreboard; the undo history and log stay on this phone.
+  function snapshot(){
+    var o = {};
+    Object.keys(G).forEach(function(k){ if(k !== "hist" && k !== "log") o[k] = G[k]; });
+    return clone(o);
+  }
   function logEvent(kind, detail){
-    if(!G) return;
+    if(!G || viewing) return;
     G.seq = (G.seq || 0) + 1;
-    var e = {id: G.id + "-" + G.seq, seq: G.seq, at: new Date().toISOString(), game_ms: Math.round(shownElapsed()),
+    var e = {id: G.id + "-" + (G.device || DEV).slice(-5) + "-" + G.seq, seq: G.seq, at: new Date().toISOString(), game_ms: Math.round(shownElapsed()),
              umpire: umpName() || G.umpire, kind: kind, detail: detail, score: scoreText()};
     G.log.push(e);
     save();
@@ -1243,6 +1308,7 @@ textarea{resize:vertical;min-height:90px}
   }
 
   function act(kind, t){
+    if(viewing) return;
     var s = G.s;
     if(s.over !== null || G.to.active || t !== s.serving) return;
     var tnow = now(); if(tnow - lastTap < 350) return; lastTap = tnow;   // guard against double taps
@@ -1284,7 +1350,7 @@ textarea{resize:vertical;min-height:90px}
   }
 
   function undo(){
-    if(!G || !G.hist.length || G.to.active) return;
+    if(!G || viewing || !G.hist.length || G.to.active) return;
     var what = G.last, h0 = G.hist.pop();
     G.s = h0.s; G.last = h0.last; G.notice = null;
     logEvent("undo", "Undo: " + (what || "last action") + ".");
@@ -1298,7 +1364,7 @@ textarea{resize:vertical;min-height:90px}
 
   /* ---------- timeouts ---------- */
   function startTimeout(t){
-    if(!canTimeout(t)) return;
+    if(viewing || !canTimeout(t)) return;
     var wasRunning = !!G.clock.since;
     clockPause();
     G.to.used[t]++;
@@ -1307,6 +1373,7 @@ textarea{resize:vertical;min-height:90px}
     render(); renderTimeout();
   }
   function endTimeout(cancel){
+    if(viewing) return;
     var a = G.to.active; if(!a) return;
     var used = fmt(Math.min(TO_MS, now() - a.since));
     if(cancel) G.to.used[a.team] = Math.max(0, G.to.used[a.team] - 1);
@@ -1323,6 +1390,7 @@ textarea{resize:vertical;min-height:90px}
     return teamLabel(a) + " " + G.s.score[a] + " - " + G.s.score[bb] + " " + teamLabel(bb);
   }
   function finish(status, detail){
+    if(viewing) return;
     G.status = status; G.endedAt = new Date().toISOString();
     logEvent(status === "discarded" ? "discard" : "end", detail);
     if(status !== "discarded"){
@@ -1345,12 +1413,20 @@ textarea{resize:vertical;min-height:90px}
   function renderMatchLine(){
     var ml = $("matchLine"); ml.textContent = "";
     ml.appendChild(span(G.cfg.label, "ml-label"));
+    if(viewing){
+      var info = viewing.info || {}, ago = info.updated_at ? Math.max(0, Math.round((now() - new Date(info.updated_at).getTime()) / 1000)) : null;
+      var st = info.status !== "live" ? "Finished" :
+        (viewing.error ? "Can't reach server" : "Live · " + (info.umpire || "") + (ago != null ? " · " + (ago < 60 ? ago + "s" : Math.round(ago / 60) + "m") + " ago" : ""));
+      ml.appendChild(span(st, "ml-sync live"));
+      return;
+    }
     var n = pendingCount();
     ml.appendChild(span(syncState === "auth" ? "Sign in again to upload" : (n ? n + " to upload" : "Saved online"), "ml-sync" + (n ? " pending" : "")));
   }
   function render(){
     if(!G || screen !== "game") return;
     var s = G.s, rcv = receiver(), lt = leftTeam();
+    document.body.classList.toggle("viewing", !!viewing);
     renderMatchLine();
 
     // court
@@ -1417,13 +1493,13 @@ textarea{resize:vertical;min-height:90px}
     else la.textContent = "To " + G.cfg.target + ", win by 2" + (G.cfg.switchAt ? " · switch ends at " + G.cfg.switchAt : "") + ". Tap the serving team's +1 or N.";
 
     // overlays
-    if(G.notice === "switch" && s.over === null){
+    if(G.notice === "switch" && s.over === null && !viewing){
       var who = s.score[0] === G.cfg.switchAt ? 0 : 1;
       $("switchText").textContent = teamLabel(who) + " reached " + G.cfg.switchAt + ". Teams change ends now. Each player keeps the same side, right or left. The court and panels on screen have flipped to match.";
       $("ovSwitch").hidden = false;
     }else $("ovSwitch").hidden = true;
 
-    if(s.over !== null){
+    if(s.over !== null && !viewing){
       var w = s.over, l = 1 - w, f = $("overFinal"); f.textContent = "";
       $("overTitle").textContent = teamLabel(w) + " wins";
       [w, l].forEach(function(t){
@@ -1485,7 +1561,7 @@ textarea{resize:vertical;min-height:90px}
       (a.resume ? "Game clock paused. It resumes when the timeout ends." : "Game clock is paused.");
     $("btnToEnd").textContent = rem <= 0 ? "Resume play" : "End timeout";
     $("btnToCancel").hidden = rem <= 0;
-    if(rem <= 0 && !a.done){
+    if(rem <= 0 && !a.done && !viewing){
       a.done = true; vibrate([300, 150, 300]); beep(660, 0.35, 3);
       logEvent("timeout", teamLabel(a.team) + " timeout: 1:00 is up.");
     }
@@ -1497,6 +1573,7 @@ textarea{resize:vertical;min-height:90px}
     renderClock();
     renderTimeoutButtons();
     if(G.to.active) renderTimeout();
+    if(viewing){ if(now() % 1000 < 250) renderMatchLine(); return; }
     if(limitMs() && !G.clock.timeUp && G.s.over === null && remaining() <= 0){
       G.clock.timeUp = true; vibrate([400, 200, 400]); beep(520, 0.4, 3); toast("Game time is up");
       logEvent("time_up", "Time limit reached (" + G.cfg.timeLimitMin + " min).");
@@ -1516,14 +1593,15 @@ textarea{resize:vertical;min-height:90px}
       score_a:r.score[ia], score_b:r.score[ib], winner: r.winner === null ? null : (r.winner === ia ? "A" : "B"),
       status: r.complete ? "final" : "ended_early", started_at:r.date, duration_ms:r.durationMs, umpire:null, log:null};
   }
-  function showMatches(){
-    renderMatches();
+  function showMatches(quiet){
     var u = ump(); if(!u) return;
-    matchesState = "loading"; renderMatches();
+    if(!quiet){ matchesState = "loading"; renderMatches(); }
     rpc("pb_matches", {p_pass:u.pass}).then(function(list){
       serverMatches = list || []; matchesState = "ok";
     }).catch(function(){ matchesState = "offline"; }).then(function(){ if(screen === "results") renderMatches(); });
   }
+  // Live scores in the list refresh on their own.
+  setInterval(function(){ if(screen === "results") showMatches(true); }, 10000);
   function allMatches(){
     var map = {}, out = outbox();
     (serverMatches || []).forEach(function(m){ map[m.id] = m; });
@@ -1534,7 +1612,7 @@ textarea{resize:vertical;min-height:90px}
       if(out[id].match.status === "discarded"){ delete map[id]; return; }
       if(!map[id]) map[id] = out[id].match;
     });
-    if(G){ var cur = matchSummary(); cur.log = G.log; cur.current = true; map[G.id] = cur; }
+    if(G && !viewing){ var cur = matchSummary(); cur.log = G.log; cur.current = true; map[G.id] = cur; }
     return Object.keys(map).map(function(k){ return map[k]; })
       .sort(function(x, y){ return (y.started_at || "").localeCompare(x.started_at || ""); });
   }
@@ -1570,7 +1648,10 @@ textarea{resize:vertical;min-height:90px}
       ].concat(rows).concat([
         h("div", {class:"res-foot"}, [
           h("div", {class:"chips"}, chips),
-          h("button", {type:"button", class:"btn", text:"View log", onclick:function(){ openLog(m); }})
+          h("div", {class:"btn-pair"}, [
+            m.status === "live" && !m.current ? h("button", {type:"button", class:"btn primary", text:"Watch live", onclick:function(){ watch(m); }}) : null,
+            h("button", {type:"button", class:"btn", text:"View log", onclick:function(){ openLog(m); }})
+          ])
         ])
       ])));
     });
@@ -1582,16 +1663,16 @@ textarea{resize:vertical;min-height:90px}
     logMatch = m; logRows = m.log ? m.log.slice() : [];
     backTo = screen;
     show("log");
-    renderLog(m.log ? "" : "Loading log…");
-    if(m.log && !m.current) return;
-    if(m.current) return;
+    renderLog(logRows.length ? "" : "Loading log…");
     var u = ump(); if(!u) return;
+    // Merge the server's copy with anything on this phone (a match taken over midway has entries from two phones).
     rpc("pb_match_log", {p_pass:u.pass, p_match_id:m.id}).then(function(rows){
+      if(logMatch !== m) return;
       var seen = {}; logRows = [];
-      (rows || []).concat((outbox()[m.id] || {events:[]}).events).forEach(function(e){ if(!seen[e.id]){ seen[e.id] = 1; logRows.push(e); } });
-      logRows.sort(function(x, y){ return x.seq - y.seq; });
+      (rows || []).concat(m.log || [], (outbox()[m.id] || {events:[]}).events).forEach(function(e){ if(!seen[e.id]){ seen[e.id] = 1; logRows.push(e); } });
+      logRows.sort(function(x, y){ return (x.at || "").localeCompare(y.at || "") || x.seq - y.seq; });
       renderLog("");
-    }).catch(function(){ renderLog("Can't load this log right now. Check your internet and try again."); });
+    }).catch(function(){ if(!logRows.length) renderLog("Can't load this log right now. Check your internet and try again."); });
   }
   function renderLog(msg){
     var m = logMatch;
@@ -1630,6 +1711,62 @@ textarea{resize:vertical;min-height:90px}
     }catch(e){ fallback(); }
   });
   $("btnLogBack").addEventListener("click", function(){ show(backTo === "game" && G ? "game" : (backTo === "log" ? "results" : backTo)); });
+
+  /* ================= WATCH LIVE ================= */
+  // Shows another umpire's match read-only, refreshed every few seconds from the server.
+  function watch(m){
+    if(G && !viewing){ toast("Save or end your own game before watching another."); return; }
+    viewing = {id:m.id, label:m.label, info:null, error:false, timer:0};
+    toast("Loading live match…");
+    pollWatch(true);
+  }
+  function pollWatch(first){
+    var u = ump(), v = viewing; if(!u || !v) return;
+    rpc("pb_match_state", {p_pass:u.pass, p_match_id:v.id}).then(function(r){
+      if(viewing !== v) return;
+      if(!r || !r.state){
+        if(first){ stopWatch(); toast("No live scoreboard for this match yet. Try again in a moment."); }
+        return;
+      }
+      v.info = r; v.error = false;
+      var g = upgradeGame(r.state); g.hist = []; g.log = [];
+      G = g;
+      if(first) show("game"); else render();
+    }).catch(function(){
+      if(viewing !== v) return;
+      v.error = true;
+      if(first){ stopWatch(); toast("Can't load the live match. Check your internet."); }
+    }).then(function(){
+      if(viewing === v && v.info && v.info.status === "live") v.timer = setTimeout(pollWatch, 3000);
+    });
+  }
+  function stopWatch(){
+    if(!viewing) return;
+    clearTimeout(viewing.timer);
+    viewing = null; G = null;
+    document.body.classList.remove("viewing");
+    show("results");
+  }
+  function takeOver(){
+    var v = viewing, info = (v && v.info) || {};
+    modal("Take over scoring?", "Only do this if " + (info.umpire || "the other umpire") + "'s phone stopped working. Their phone will no longer be able to change this match, and you'll keep scoring from here.", [
+      {label:"Take over scoring", cls:"primary", fn:function(){
+        var u = ump();
+        rpc("pb_takeover", {p_pass:u.pass, p_match_id:v.id, p_device:DEV, p_umpire:umpName()}).then(function(state){
+          clearTimeout(v.timer);
+          viewing = null;
+          document.body.classList.remove("viewing");
+          var g = upgradeGame(state); g.hist = []; g.log = []; g.device = DEV; g.umpire = umpName();
+          G = g; save();
+          logEvent("takeover", "Scoring taken over by " + umpName() + " from " + (info.umpire || "another umpire") + ".");
+          show("game"); toast("You're scoring this match now");
+        }).catch(function(err){
+          toast(err && /not live/i.test(err.message) ? "This match already finished." : "Couldn't take over. Check your internet and try again.");
+        });
+      }},
+      {label:"Keep watching"}
+    ]);
+  }
 
   /* ================= TEAMS ADMIN ================= */
   var adminOpen = null, adminEdit = null, adminDel = null, adminNewTour = false;
@@ -1828,7 +1965,7 @@ textarea{resize:vertical;min-height:90px}
   $("btnToEnd").addEventListener("click", function(){ endTimeout(false); });
   $("btnToCancel").addEventListener("click", function(){ endTimeout(true); toast("Timeout cancelled"); });
   $("btnClock").addEventListener("click", function(){
-    if(!G || G.s.over !== null || G.to.active) return;
+    if(!G || viewing || G.s.over !== null || G.to.active) return;
     var c = G.clock;
     if(c.since){ clockPause(); logEvent("clock", "Clock paused."); }
     else { var first = !c.started; clockStart(); logEvent("clock", first ? "Clock started." : "Clock resumed."); }
@@ -1837,8 +1974,17 @@ textarea{resize:vertical;min-height:90px}
   $("btnResults1").addEventListener("click", function(){ backTo = "setup"; show("results"); });
   $("btnAdmin").addEventListener("click", function(){ adminEdit = adminDel = null; show("admin"); loadData(); });
   $("btnAdminBack").addEventListener("click", function(){ show("setup"); });
-  $("btnBack").addEventListener("click", function(){ show(G ? "game" : "setup"); });
+  $("btnBack").addEventListener("click", function(){ show(G && !viewing ? "game" : "setup"); });
   $("btnMenu").addEventListener("click", function(){
+    if(viewing){
+      modal("Watching live", G.cfg.label + (viewing.info && viewing.info.umpire ? " · scored by " + viewing.info.umpire : ""), [
+        {label:"Match log", fn:function(){ var m = matchSummary(); m.log = []; openLog(m); }},
+        {label:"Take over scoring", fn:takeOver},
+        {label:"Stop watching", cls:"primary", fn:stopWatch},
+        {label:"Close", cls:"ghost"}
+      ]);
+      return;
+    }
     modal("Menu", G.cfg.label, [
       {label:"Match log", fn:function(){ var m = matchSummary(); m.log = G.log; m.current = true; openLog(m); }},
       {label:"Mirror court view (I moved to the other post)", fn:function(){
@@ -1870,7 +2016,7 @@ textarea{resize:vertical;min-height:90px}
     loadData();
     scheduleSync(500);
   }
-  try{ window.claude && window.claude.hot && window.claude.hot.snapshot && window.claude.hot.snapshot(function(){ return {G:G}; }); }catch(e){}
+  try{ window.claude && window.claude.hot && window.claude.hot.snapshot && window.claude.hot.snapshot(function(){ return {G:viewing ? null : G}; }); }catch(e){}
   var hot = window.claude && window.claude.hot;
   if(hot && hot.ready) hot.ready(start); else start((hot && hot.data) || {});
 
