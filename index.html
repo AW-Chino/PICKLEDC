@@ -221,6 +221,9 @@ textarea{resize:vertical;min-height:90px}
 .home-tile.main span{color:var(--bg);opacity:.75}
 .home-tile.resume{background:var(--t1-soft);border:2px solid var(--t1)}
 .home-tile:active{transform:translateY(1px)}
+.home-pair{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.home-pair .home-tile b{font-size:22px}
+.at-row{grid-template-columns:64px 1fr}
 
 /* ---------- create match: folded settings ---------- */
 .settings-card summary{cursor:pointer;display:flex;flex-direction:column;gap:2px;list-style:none}
@@ -377,8 +380,42 @@ body.viewing .bottombar{min-height:0}
     <button type="button" class="home-tile" id="goBoard"><b>Show live score</b><span>All courts. Works on a phone or a big screen.</span></button>
     <button type="button" class="home-tile main" id="goCreate"><b>Create match</b><span>Pick the category and two teams, then score.</span></button>
     <button type="button" class="home-tile" id="goAdmin"><b>Set tournament today</b><span id="todayLabel">Tournament, categories and teams.</span></button>
+    <div class="home-pair" id="teamTiles" hidden>
+      <button type="button" class="home-tile" id="goAddTeam"><b>Add a team</b><span>Pick the category, type two players.</span></button>
+      <button type="button" class="home-tile" id="goEditTeams"><b>Edit teams</b><span id="todayLabel2">Categories and teams.</span></button>
+    </div>
   </div>
   <button type="button" class="btn ghost" id="goHistory">Match history and logs</button>
+</section>
+
+<!-- ================= ADD A TEAM ================= -->
+<section id="scrAddTeam" class="screen" hidden>
+  <header class="app-head">
+    <div class="brand">Add a team<small id="addTeamToday"></small></div>
+    <button type="button" class="btn" id="btnAddTeamBack">Back</button>
+  </header>
+  <form class="setup" id="addTeamForm" novalidate>
+    <div class="card">
+      <div class="field">
+        <label for="atCat">Category</label>
+        <select id="atCat"></select>
+      </div>
+      <div class="grid2">
+        <div class="field">
+          <label for="atP1">Player 1</label>
+          <input type="text" id="atP1" autocomplete="off" autocapitalize="words" placeholder="e.g. Santos">
+        </div>
+        <div class="field">
+          <label for="atP2">Player 2</label>
+          <input type="text" id="atP2" autocomplete="off" autocapitalize="words" placeholder="e.g. Reyes">
+        </div>
+      </div>
+      <p class="hint" id="atCode"></p>
+    </div>
+    <p class="err" id="atErr" hidden></p>
+    <button type="submit" class="btn primary start-btn" id="btnAddTeam">Add team</button>
+    <div class="card" id="atList"></div>
+  </form>
 </section>
 
 <!-- ================= LIVE BOARD ================= -->
@@ -856,6 +893,7 @@ body.viewing .bottombar{min-height:0}
       dataState = "ok";
       if(screen === "setup") fillTourSetup();
       if(screen === "home") renderHome();
+      if(screen === "addteam") renderAddTeam(false);
       if(screen === "admin") renderAdmin();
       updateSyncLine();
     }).catch(function(err){
@@ -946,7 +984,7 @@ body.viewing .bottombar{min-height:0}
   }
 
   /* ================= SCREENS ================= */
-  var SCREENS = {login:"scrLogin", home:"scrHome", board:"scrBoard", setup:"scrSetup", game:"scrGame", results:"scrResults", log:"scrLog", admin:"scrAdmin"};
+  var SCREENS = {login:"scrLogin", home:"scrHome", board:"scrBoard", addteam:"scrAddTeam", setup:"scrSetup", game:"scrGame", results:"scrResults", log:"scrLog", admin:"scrAdmin"};
   var backTo = "home";
   function show(name){
     screen = name;
@@ -955,6 +993,7 @@ body.viewing .bottombar{min-height:0}
     if(name === "results") showMatches();
     if(name === "setup") loadSetup();
     if(name === "home") renderHome();
+    if(name === "addteam") renderAddTeam(true);
     if(name === "board") startBoard(); else stopBoard();
     if(name === "admin") renderAdmin();
     window.scrollTo(0, 0);
@@ -966,9 +1005,13 @@ body.viewing .bottombar{min-height:0}
     var first = $("lgFirst").value.trim(), last = $("lgLast").value.trim(), pass = $("lgPass").value.trim();
     var err = $("loginErr");
     if(!first || !last || !pass){ err.textContent = "Enter your first name, last name and the tournament password."; err.hidden = false; return; }
-    var name = first + " " + last;
+    var name = (first + " " + last).replace(/\s+/g, " ");
     $("btnLogin").disabled = true; $("btnLogin").textContent = "Checking…";
-    rpc("pb_check", {p_pass:pass, p_umpire:name}).then(function(){
+    // Names are matched ignoring capitals; the server returns the spelling it already knows.
+    rpc("pb_signin", {p_pass:pass, p_umpire:name}).then(function(known){
+      name = known || name;
+      var parts = name.split(" ");
+      first = parts.shift(); last = parts.join(" ");
       store.set(K_UMP, {first:first, last:last, name:name, pass:pass});
       err.hidden = true; $("lgPass").value = "";
       syncState = "ok";
@@ -1893,11 +1936,66 @@ body.viewing .bottombar{min-height:0}
     var tour = curTour(), mine = G && !viewing;
     $("btnWho").textContent = "Umpire: " + umpName() + " · Sign out";
     $("todayLabel").textContent = tour ? "Today: " + tour.name + ". Categories and teams." : "Not set yet. Add today's tournament, categories and teams.";
+    // Once today's tournament has categories, adding a team is the everyday task.
+    var ready = !!(tour && catsOf(tour.id).length);
+    $("goAdmin").hidden = ready;
+    $("teamTiles").hidden = !ready;
+    if(ready) $("todayLabel2").textContent = "Categories, teams and codes.";
     $("goResume").hidden = !mine;
     $("goCreate").hidden = !!mine;   // one match per phone at a time
     if(mine) $("resumeLabel").textContent = G.cfg.label + " · " + callText().replace(/-/g, " – ");
     updateSyncLine();
   }
+
+  /* ================= ADD A TEAM ================= */
+  var lastAddCat = null;
+  function renderAddTeam(fresh){
+    var tour = curTour(), cats = tour ? catsOf(tour.id) : [];
+    $("addTeamToday").textContent = tour ? "Today: " + tour.name : "";
+    var keep = $("atCat").value || lastAddCat;
+    fillSelect($("atCat"), cats.map(function(c){ return option(c.id, c.name + " (" + teamsOf(c.id).length + " teams)"); }), false);
+    if(keep && cats.some(function(c){ return c.id === keep; })) $("atCat").value = keep;
+    if(fresh){ $("atP1").value = ""; $("atP2").value = ""; $("atErr").hidden = true; }
+    renderAddTeamInfo();
+  }
+  function renderAddTeamInfo(){
+    var cat = findCat($("atCat").value), box = $("atList");
+    $("atCode").textContent = cat ? "This team will be " + nextTeamCode(cat) + "." : "";
+    box.textContent = "";
+    if(!cat) return;
+    var teams = teamsOf(cat.id);
+    box.appendChild(h("h2", null, [cat.name, span(teams.length + " team" + (teams.length === 1 ? "" : "s"))]));
+    if(!teams.length) box.appendChild(h("p", {class:"hint", text:"No teams yet in this category."}));
+    teams.forEach(function(t){
+      box.appendChild(h("div", {class:"team-row at-row"}, [span(t.code, "tr-code"), span(t.player1 + " / " + t.player2, "tr-names")]));
+    });
+  }
+  $("atCat").addEventListener("change", function(){ lastAddCat = $("atCat").value; renderAddTeamInfo(); });
+  $("addTeamForm").addEventListener("submit", function(e){
+    e.preventDefault();
+    var cat = findCat($("atCat").value), p1 = $("atP1").value.trim(), p2 = $("atP2").value.trim(), err = $("atErr");
+    if(!cat){ err.textContent = "Choose a category."; err.hidden = false; return; }
+    if(!p1 || !p2){ err.textContent = "Enter both players."; err.hidden = false; return; }
+    var dup = teamsOf(cat.id).filter(function(t){
+      return [t.player1, t.player2].map(function(x){ return x.toLowerCase(); }).sort().join("|") === [p1, p2].map(function(x){ return x.toLowerCase(); }).sort().join("|");
+    })[0];
+    if(dup){ err.textContent = p1 + " and " + p2 + " are already " + dup.code + " in " + cat.name + "."; err.hidden = false; return; }
+    err.hidden = true;
+    var code = nextTeamCode(cat), btn = $("btnAddTeam"), u = ump();
+    btn.disabled = true; btn.textContent = "Adding…";
+    rpc("pb_save", {p_pass:u.pass, p_kind:"team", p_row:{category_id:cat.id, code:code, player1:p1, player2:p2}}).then(function(){
+      lastAddCat = cat.id;
+      $("atP1").value = ""; $("atP2").value = "";
+      toast("Added " + code + " · " + p1 + " / " + p2);
+      return loadData();
+    }).then(function(){ $("atP1").focus(); }).catch(function(x){
+      err.textContent = x && x.auth ? "The tournament password changed. Sign out and sign in again." : "Couldn't add the team. Check your internet and try again.";
+      err.hidden = false;
+    }).then(function(){ btn.disabled = false; btn.textContent = "Add team"; });
+  });
+  $("goAddTeam").addEventListener("click", function(){ show("addteam"); loadData(); });
+  $("goEditTeams").addEventListener("click", function(){ adminEdit = adminDel = null; show("admin"); loadData(); });
+  $("btnAddTeamBack").addEventListener("click", function(){ show("home"); });
 
   /* ================= LIVE BOARD ================= */
   // Up to 4 courts. Each match keeps its tile while it is live (and for 3 minutes after it ends).
@@ -2263,8 +2361,6 @@ body.viewing .bottombar{min-height:0}
       {label:"Mirror court view (I moved to the other post)", fn:function(){
         G.cfg.team1Left = !G.cfg.team1Left; logEvent("view", "Court view mirrored (umpire moved to the other post)."); render(); toast("Court view mirrored");
       }},
-      {label:"Home (the game keeps going)", fn:function(){ show("home"); }},
-      {label:"All matches", fn:function(){ backTo = "game"; show("results"); }},
       {label:"End game and save score", fn:function(){
         modal("End game now?", "The current score is saved as ended early.", [
           {label:"End and save", cls:"primary", fn:function(){ saveResult(G.s.over !== null); }},
