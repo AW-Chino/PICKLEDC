@@ -212,6 +212,78 @@ textarea{resize:vertical;min-height:90px}
 .ml-sync{flex:none}
 .ml-sync.pending{color:var(--warn)}
 .ml-sync.live{color:var(--t1);font-weight:700}
+/* ---------- home ---------- */
+.home-tiles{display:flex;flex-direction:column;gap:12px;padding-block:8px 16px}
+.home-tile{display:flex;flex-direction:column;gap:4px;text-align:left;padding:20px 18px;border:1px solid var(--line);border-radius:14px;background:var(--surface);min-height:92px}
+.home-tile b{font-family:var(--font-display);font-size:26px;font-weight:700;text-transform:uppercase;letter-spacing:.03em;line-height:1}
+.home-tile span{color:var(--muted);font-size:14px}
+.home-tile.main{background:var(--fg);border-color:var(--fg);color:var(--bg)}
+.home-tile.main span{color:var(--bg);opacity:.75}
+.home-tile.resume{background:var(--t1-soft);border:2px solid var(--t1)}
+.home-tile:active{transform:translateY(1px)}
+
+/* ---------- create match: folded settings ---------- */
+.settings-card summary{cursor:pointer;display:flex;flex-direction:column;gap:2px;list-style:none}
+.settings-card summary::-webkit-details-marker{display:none}
+.set-title{font-family:var(--font-display);font-size:20px;font-weight:700;text-transform:uppercase;letter-spacing:.03em}
+.set-title::after{content:" ▸";color:var(--muted)}
+.settings-card[open] .set-title::after{content:" ▾"}
+.set-sum{font-size:13px;color:var(--muted)}
+
+/* ---------- live board ---------- */
+.screen.board-screen{max-width:none;gap:10px}
+.board-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding-top:12px}
+.board-title{display:flex;flex-direction:column;min-width:0}
+.board-title b{font-family:var(--font-display);font-size:24px;text-transform:uppercase;letter-spacing:.03em;line-height:1.1}
+.board-title span{font-size:12px;color:var(--muted)}
+.board{display:flex;flex-direction:column;gap:10px;padding-bottom:16px}
+.bt-tile{display:flex;flex-direction:column;gap:8px;text-align:left;width:100%;padding:12px;border:1px solid var(--line);border-radius:14px;background:var(--surface);color:var(--fg);min-width:0}
+.bt-tile.final{opacity:.8}
+.bt-tile.empty{display:none}
+.bt-head{display:flex;align-items:baseline;gap:8px;min-width:0}
+.bt-label{flex:1;min-width:0;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bt-clock{font-family:var(--font-display);font-weight:700;font-size:18px;font-variant-numeric:tabular-nums;white-space:nowrap}
+.bt-status{font-size:10px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;padding:2px 7px;border-radius:999px;background:var(--surface-2);color:var(--muted)}
+.bt-status.live{background:var(--t1);color:var(--on-team)}
+.bt-status.timeout{background:var(--warn-soft);color:var(--warn)}
+.bt-court{display:none}
+.bt-rows{display:flex;flex-direction:column;gap:4px}
+.bt-row{display:grid;grid-template-columns:8px auto 1fr auto auto;gap:8px;align-items:center;padding:6px 8px;border-radius:9px}
+.bt-row i{width:8px;height:26px;border-radius:3px;background:var(--team)}
+.bt-row.serving{background:var(--team-soft)}
+.bt-code{font-family:var(--font-display);font-weight:700;font-size:18px}
+.bt-names{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:14px;color:var(--muted)}
+.bt-srv{font-size:11px;font-weight:700;padding:1px 6px;border-radius:999px;background:var(--ball);color:#1b2a22;min-width:0}
+.bt-srv:empty{background:none;padding:0}
+.bt-sc{font-family:var(--font-display);font-weight:700;font-size:34px;line-height:1;font-variant-numeric:tabular-nums;min-width:1.4em;text-align:right}
+.bt-row.won .bt-sc{color:var(--t1)}
+.bt-foot{display:flex;justify-content:space-between;gap:8px;font-size:12px;color:var(--muted)}
+.bt-none{margin:0}
+@media (max-width: 899px){
+  #btnFull{display:none}
+  .board-title b{font-size:20px}
+}
+/* Laptop or TV: 2 x 2 courts, names on court, team scores over the net */
+@media (min-width: 900px){
+  .board{display:grid;grid-template-columns:1fr 1fr;grid-auto-rows:1fr;gap:14px;flex:1;min-height:calc(100vh - 116px)}
+  .board.none{display:flex}
+  .bt-tile{padding:14px 16px;gap:10px;justify-content:space-between}
+  .bt-tile.empty{display:flex;align-items:center;justify-content:center;color:var(--muted);border-style:dashed;font-size:18px;background:transparent}
+  .board.none .bt-tile.empty{display:none}
+  .bt-label{font-size:clamp(15px,1.3vw,22px)}
+  .bt-clock{font-size:clamp(20px,2vw,34px)}
+  .bt-court{display:block;align-self:center;width:min(100%, calc((50vh - 150px) * 2.2));background:var(--court-out);border-radius:10px;
+    box-shadow:0 0 0 clamp(8px,1vw,14px) var(--court-out)}
+  .bt-court .pl{max-width:30%}
+  .bt-court .pl-name{font-size:clamp(14px,1.4vw,24px)}
+  .bt-rows{display:none}
+  .bt-score{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);display:flex;gap:clamp(14px,2.4vw,40px);pointer-events:none}
+  .bt-num{font-family:var(--font-display);font-weight:700;font-size:clamp(44px,6vw,110px);line-height:1;font-variant-numeric:tabular-nums;
+    color:#fff;text-shadow:0 2px 0 rgba(0,0,0,.45),0 0 18px rgba(0,0,0,.35);min-width:1.1em;text-align:center}
+  .bt-num.serving{color:var(--ball)}
+  .bt-foot{font-size:clamp(12px,1vw,16px)}
+}
+
 /* Watching another umpire's match: read-only */
 body.viewing .score-btns,body.viewing .btn-to,body.viewing #btnUndo,body.viewing #btnClock,
 body.viewing #ovTimeout .btn-row{display:none}
@@ -294,18 +366,42 @@ body.viewing .bottombar{min-height:0}
   </form>
 </section>
 
+<!-- ================= HOME ================= -->
+<section id="scrHome" class="screen" hidden>
+  <header class="app-head">
+    <div class="brand">Pickleball Umpire<small><button type="button" class="linkish" id="btnWho"></button></small></div>
+  </header>
+  <p class="sync-line" id="homeSync"></p>
+  <div class="home-tiles">
+    <button type="button" class="home-tile resume" id="goResume" hidden><b>Resume your match</b><span id="resumeLabel"></span></button>
+    <button type="button" class="home-tile" id="goBoard"><b>Show live score</b><span>All courts. Works on a phone or a big screen.</span></button>
+    <button type="button" class="home-tile main" id="goCreate"><b>Create match</b><span>Pick the category and two teams, then score.</span></button>
+    <button type="button" class="home-tile" id="goAdmin"><b>Set tournament today</b><span id="todayLabel">Tournament, categories and teams.</span></button>
+  </div>
+  <button type="button" class="btn ghost" id="goHistory">Match history and logs</button>
+</section>
+
+<!-- ================= LIVE BOARD ================= -->
+<section id="scrBoard" class="screen board-screen" hidden>
+  <header class="board-head">
+    <div class="board-title"><b id="boardTitle">Live scores</b><span id="boardSub"></span></div>
+    <div class="head-btns">
+      <button type="button" class="btn" id="btnFull">Full screen</button>
+      <button type="button" class="btn" id="btnBoardBack">Back</button>
+    </div>
+  </header>
+  <div class="board" id="board"></div>
+</section>
+
 <!-- ================= SETUP ================= -->
 <section id="scrSetup" class="screen" hidden>
   <header class="app-head">
-    <div class="brand">Pickleball Umpire<small><button type="button" class="linkish" id="btnWho"></button></small></div>
-    <div class="head-btns">
-      <button type="button" class="btn" id="btnResults1">Matches</button>
-      <button type="button" class="btn" id="btnAdmin">Teams</button>
-    </div>
+    <div class="brand">Create match<small id="setupToday"></small></div>
+    <button type="button" class="btn" id="btnSetupBack">Back</button>
   </header>
   <p class="sync-line" id="syncLine"></p>
   <form class="setup" id="setupForm" novalidate>
-    <fieldset class="seg">
+    <fieldset class="seg" hidden>
       <legend>Mode</legend>
       <div class="opts">
         <label><input type="radio" name="mode" id="mdT" value="tournament" checked><span>Tournament</span></label>
@@ -354,6 +450,7 @@ body.viewing .bottombar{min-height:0}
           </div>
         </fieldset>
       </div>
+      <button type="button" class="btn ghost" id="btnOpenPlay">Open play instead (type player names)</button>
     </div>
 
     <div id="openBlock" class="setup-block" hidden>
@@ -383,6 +480,7 @@ body.viewing .bottombar{min-height:0}
           </div>
         </div>
       </div>
+      <button type="button" class="btn ghost" id="btnTourPlay">Back to tournament teams</button>
     </div>
 
     <div class="card">
@@ -405,7 +503,8 @@ body.viewing .bottombar{min-height:0}
       </fieldset>
     </div>
 
-    <div class="card">
+    <details class="card settings-card" id="settingsCard">
+      <summary><span class="set-title">Game settings</span><span class="set-sum" id="settingsSum"></span></summary>
       <fieldset class="seg big-seg">
         <legend>Game to (win by 2)</legend>
         <div class="opts">
@@ -438,7 +537,7 @@ body.viewing .bottombar{min-height:0}
         </div>
       </fieldset>
       <p class="hint">Each team gets one 1-minute timeout. With a time limit, timeouts lock under 2:00.</p>
-    </div>
+    </details>
 
     <p class="err" id="setupErr" hidden></p>
     <button type="submit" class="btn primary start-btn" id="btnStart">Start game</button>
@@ -539,7 +638,7 @@ body.viewing .bottombar{min-height:0}
 <!-- ================= TEAMS ADMIN ================= -->
 <section id="scrAdmin" class="screen" hidden>
   <header class="app-head">
-    <div class="brand">Teams<small>Shared with all umpires</small></div>
+    <div class="brand">Tournament today<small>Shared with all umpires</small></div>
     <button type="button" class="btn" id="btnAdminBack">Back</button>
   </header>
   <div class="setup" id="adminBody"></div>
@@ -756,6 +855,7 @@ body.viewing .bottombar{min-height:0}
       store.set(K_DATA, d);
       dataState = "ok";
       if(screen === "setup") fillTourSetup();
+      if(screen === "home") renderHome();
       if(screen === "admin") renderAdmin();
       updateSyncLine();
     }).catch(function(err){
@@ -816,7 +916,7 @@ body.viewing .bottombar{min-height:0}
     var who = (message.match(/taken over by (.+)/i) || [])[1] || "another umpire";
     store.del(K_GAME); G = null;
     $("ovOver").hidden = true; $("ovSwitch").hidden = true; $("ovTimeout").hidden = true;
-    show("setup");
+    show("home");
     modal("Scoring moved to another phone", who + " took over scoring this match. This phone can no longer change its score. You can still watch it live from Matches.", [{label:"OK", cls:"primary"}]);
   }
   window.addEventListener("online", function(){ scheduleSync(200); loadData(); });
@@ -835,8 +935,10 @@ body.viewing .bottombar{min-height:0}
     else if(d.at) parts.push("Teams updated " + clockTime(d.at).replace(/:\d\d(?=\s|$)/, "") + (dataState === "offline" ? " (offline)" : ""));
     else if(dataState === "offline") parts.push("Offline. Teams not loaded yet.");
     parts.push(syncText());
-    $("syncLine").textContent = parts.join(" · ");
-    $("syncLine").className = "sync-line" + (pendingCount() ? " pending" : "");
+    ["syncLine", "homeSync"].forEach(function(id){
+      $(id).textContent = parts.join(" · ");
+      $(id).className = "sync-line" + (pendingCount() ? " pending" : "");
+    });
     if(G && screen === "game") renderMatchLine();
   }
   function authLost(){
@@ -844,14 +946,16 @@ body.viewing .bottombar{min-height:0}
   }
 
   /* ================= SCREENS ================= */
-  var SCREENS = {login:"scrLogin", setup:"scrSetup", game:"scrGame", results:"scrResults", log:"scrLog", admin:"scrAdmin"};
-  var backTo = "setup";
+  var SCREENS = {login:"scrLogin", home:"scrHome", board:"scrBoard", setup:"scrSetup", game:"scrGame", results:"scrResults", log:"scrLog", admin:"scrAdmin"};
+  var backTo = "home";
   function show(name){
     screen = name;
     Object.keys(SCREENS).forEach(function(k){ $(SCREENS[k]).hidden = k !== name; });
     if(name === "game"){ keepAwake(); render(); }
     if(name === "results") showMatches();
     if(name === "setup") loadSetup();
+    if(name === "home") renderHome();
+    if(name === "board") startBoard(); else stopBoard();
     if(name === "admin") renderAdmin();
     window.scrollTo(0, 0);
   }
@@ -869,7 +973,7 @@ body.viewing .bottombar{min-height:0}
       err.hidden = true; $("lgPass").value = "";
       syncState = "ok";
       loadData(); scheduleSync(300);
-      show(G ? "game" : "setup");
+      show(G ? "game" : "home");
       toast("Signed in as " + name);
     }).catch(function(x){
       err.textContent = x.auth ? "That password is wrong. Ask the tournament organizer for it." :
@@ -903,26 +1007,40 @@ body.viewing .bottombar{min-height:0}
   document.querySelectorAll('input[name="mode"]').forEach(function(r){
     r.addEventListener("change", function(){ clearToss(); applyMode(); });
   });
+  function setMode(m){ setRadio("mode", m); clearToss(); setupError(""); applyMode(); }
+  $("btnOpenPlay").addEventListener("click", function(){ setMode("open"); });
+  $("btnTourPlay").addEventListener("click", function(){ setMode("tournament"); });
+
+  // One-line summary on the folded Game settings card.
+  function settingsSummary(){
+    var t = toInt($("timeLimit").value, 0), sw = toInt($("switchAt").value, 0);
+    $("settingsSum").textContent = "To " + radio("target") + " · " + (t ? t + " min" : "no time limit") +
+      " · " + (sw ? "switch at " + sw : "no switch") + " · " + (radio("firstServe") === "1" ? "0-0-1" : "0-0-2");
+  }
+  $("settingsCard").addEventListener("input", settingsSummary);
+  $("settingsCard").addEventListener("change", settingsSummary);
+  $("settingsCard").addEventListener("click", function(){ setTimeout(settingsSummary, 0); });
 
   function loadSetup(){
     var c = store.get(K_SETUP, null);
     $("setupErr").hidden = true;
-    $("btnWho").textContent = "Umpire: " + umpName() + " · Sign out";
     if(c){
       if(c.A){ $("t1a").value = c.A[0] || ""; $("t1b").value = c.A[1] || ""; }
       if(c.B){ $("t2a").value = c.B[0] || ""; $("t2b").value = c.B[1] || ""; }
       setRadio("target", c.target || 11);
       $("switchAt").value = c.switchAt != null ? c.switchAt : DEF_SWITCH[c.target || 11];
       setRadio("firstServe", c.startAt2 === false ? "1" : "2");
-      setRadio("mode", c.mode || "tournament");
     }
-    // Time limit, teams, baseline, serve and sides start fresh for each game.
+    // Mode, time limit, teams, baseline, serve and sides start fresh for each game.
+    setRadio("mode", "tournament");
     $("timeLimit").value = DEF_TIME;
     $("selTeamA").value = ""; $("selTeamB").value = "";
     setRadio("baseA", "0"); setRadio("baseB", "0");
+    $("settingsCard").open = false;
     clearToss();
     fillTourSetup();
     applyMode();
+    settingsSummary();
     updateSyncLine();
   }
   function clearToss(){
@@ -941,7 +1059,8 @@ body.viewing .bottombar{min-height:0}
   function fillTourSetup(){
     var d = data(), tour = curTour();
     $("tourName").textContent = tour ? tour.name : "No tournament yet";
-    $("tourPick").hidden = d.tournaments.length < 2;
+    $("setupToday").textContent = tour ? "Today: " + tour.name : "";
+    $("tourPick").hidden = true;   // matches always use today's tournament
     fillSelect($("selTour"), d.tournaments.map(function(t){ return option(t.id, t.name); }), false);
     if(tour) $("selTour").value = tour.id;
 
@@ -949,7 +1068,7 @@ body.viewing .bottombar{min-height:0}
     var hint = $("tourHint");
     if(!tour || !cats.length){
       hint.textContent = !d.at && dataState !== "ok" ? "Teams haven't loaded yet. Connect to the internet once to download them." :
-        "No categories yet. Tap Teams at the top to add the tournament, categories and teams.";
+        "No categories yet. Go back and tap Set tournament today to add categories and teams.";
       hint.hidden = false;
     }else hint.hidden = true;
     fillSelect($("selCat"), [option("", cats.length ? "Choose category" : "No categories")].concat(cats.map(function(c){
@@ -1402,7 +1521,7 @@ body.viewing .bottombar{min-height:0}
     store.del(K_GAME); G = null;
     $("ovOver").hidden = true; $("ovSwitch").hidden = true;
     scheduleSync(100);
-    show("setup");
+    show("home");
   }
   function saveResult(complete){
     finish(complete ? "final" : "ended_early", (complete ? "Result saved: " : "Ended early, score saved: ") + resultText() + ".");
@@ -1716,7 +1835,7 @@ body.viewing .bottombar{min-height:0}
   // Shows another umpire's match read-only, refreshed every few seconds from the server.
   function watch(m){
     if(G && !viewing){ toast("Save or end your own game before watching another."); return; }
-    viewing = {id:m.id, label:m.label, info:null, error:false, timer:0};
+    viewing = {id:m.id, label:m.label, info:null, error:false, timer:0, back:screen === "board" ? "board" : "results"};
     toast("Loading live match…");
     pollWatch(true);
   }
@@ -1742,10 +1861,11 @@ body.viewing .bottombar{min-height:0}
   }
   function stopWatch(){
     if(!viewing) return;
+    var back = viewing.back || "results";
     clearTimeout(viewing.timer);
     viewing = null; G = null;
     document.body.classList.remove("viewing");
-    show("results");
+    show(back);
   }
   function takeOver(){
     var v = viewing, info = (v && v.info) || {};
@@ -1767,6 +1887,145 @@ body.viewing .bottombar{min-height:0}
       {label:"Keep watching"}
     ]);
   }
+
+  /* ================= HOME ================= */
+  function renderHome(){
+    var tour = curTour(), mine = G && !viewing;
+    $("btnWho").textContent = "Umpire: " + umpName() + " · Sign out";
+    $("todayLabel").textContent = tour ? "Today: " + tour.name + ". Categories and teams." : "Not set yet. Add today's tournament, categories and teams.";
+    $("goResume").hidden = !mine;
+    $("goCreate").hidden = !!mine;   // one match per phone at a time
+    if(mine) $("resumeLabel").textContent = G.cfg.label + " · " + callText().replace(/-/g, " – ");
+    updateSyncLine();
+  }
+
+  /* ================= LIVE BOARD ================= */
+  // Up to 4 courts. Each match keeps its tile while it is live (and for 3 minutes after it ends).
+  var BOARD_SLOTS = 4;
+  var board = {gen:0, timer:0, running:false, list:[], slots:{}, games:{}, error:false, at:0};
+  function startBoard(){ if(board.running) return; board.running = true; board.gen++; renderBoard(); pollBoard(board.gen); }
+  function stopBoard(){ board.running = false; board.gen++; clearTimeout(board.timer); }
+  function pollBoard(gen){
+    var u = ump(); if(!u || gen !== board.gen) return;
+    rpc("pb_live", {p_pass:u.pass}).then(function(list){
+      board.list = list || []; board.error = false; board.at = now();
+    }).catch(function(){ board.error = true; }).then(function(){
+      if(gen !== board.gen) return;   // the board was closed or reopened meanwhile
+      renderBoard();
+      board.timer = setTimeout(function(){ pollBoard(gen); }, 3000);
+    });
+  }
+  // Run the scoring helpers (which read G) against another match's state.
+  function withGame(g, fn){ var keep = G; G = g; try{ return fn(); } finally{ G = keep; } }
+  function assignSlots(){
+    var ids = {}, used = {}, slots = board.slots;
+    board.list.forEach(function(m){ ids[m.id] = m; });
+    Object.keys(slots).forEach(function(id){ if(!ids[id]) delete slots[id]; else used[slots[id]] = id; });
+    function free(){ for(var i = 0; i < BOARD_SLOTS; i++) if(!used[i]) return i; return -1; }
+    // Live matches first; a live match may take the tile of a finished one.
+    board.list.filter(function(m){ return m.status === "live" && slots[m.id] == null; }).forEach(function(m){
+      var i = free();
+      if(i < 0){
+        var fin = Object.keys(slots).filter(function(id){ return ids[id].status !== "live"; })[0];
+        if(!fin) return;
+        i = slots[fin]; delete slots[fin];
+      }
+      slots[m.id] = i; used[i] = m.id;
+    });
+    board.list.filter(function(m){ return m.status !== "live" && slots[m.id] == null; }).forEach(function(m){
+      var i = free(); if(i >= 0){ slots[m.id] = i; used[i] = m.id; }
+    });
+    return used;
+  }
+  function boardClock(g, live){
+    return withGame(g, function(){
+      if(!live || G.s.over !== null) return "Final";
+      if(G.to.active) return "Timeout " + teamLabel(G.to.active.team);
+      if(!G.clock.started) return "Ready";
+      var lim = limitMs(), t = lim ? fmt(Math.max(0, remaining()), true) : fmt(shownElapsed());
+      return t + (G.clock.since ? "" : " · paused");
+    });
+  }
+  var COURT_SVG = '<svg class="court-svg" viewBox="0 0 440 200" aria-hidden="true">' +
+    '<rect class="c-play" x="0" y="0" width="440" height="200"/><rect class="c-kitchen" x="150" y="0" width="140" height="200"/>' +
+    '<g class="c-lines"><rect x="1.25" y="1.25" width="437.5" height="197.5"/><line x1="150" y1="0" x2="150" y2="200"/>' +
+    '<line x1="290" y1="0" x2="290" y2="200"/><line x1="0" y1="100" x2="150" y2="100"/><line x1="290" y1="100" x2="440" y2="100"/></g>' +
+    '<line class="c-net" x1="220" y1="-6" x2="220" y2="206"/>';
+  function boardTile(m){
+    var live = m.status === "live";
+    var g = upgradeGame(clone(m.state)); g.hist = []; g.log = [];
+    board.games[m.id] = {g:g, live:live};
+    return withGame(g, function(){
+      var s = G.s, lt = leftTeam(), rcv = receiver(), over = !live || s.over !== null;
+      // court with players where they stand
+      var court = h("div", {class:"court bt-court"});
+      var sp = pos(s.serving, s.server), rp = pos(1 - s.serving, rcv);
+      court.innerHTML = COURT_SVG + (over ? "" : '<line class="c-serve" x1="' + sp.x * 4.4 + '" y1="' + sp.y * 2 + '" x2="' + rp.x * 4.4 + '" y2="' + rp.y * 2 + '"/>') + "</svg>";
+      for(var t = 0; t < 2; t++) for(var i = 0; i < 2; i++){
+        var p = pos(t, i), isServer = !over && s.serving === t && s.server === i, isRecv = !over && s.serving !== t && rcv === i;
+        court.appendChild(h("div", {class:"pl t-" + col(t) + (isServer ? " is-server" : "") + (isRecv ? " is-receiver" : ""), style:"left:" + p.x + "%;top:" + p.y + "%"}, [
+          span(name(t, i), "pl-name"), isServer ? span("S" + s.serverNum, "pl-tags") : null
+        ]));
+      }
+      // the two team scores in the middle, each on its team's side of the net
+      court.appendChild(h("div", {class:"bt-score"}, [lt, 1 - lt].map(function(t){
+        return span(String(s.score[t]), "bt-num t-" + col(t) + (!over && s.serving === t ? " serving" : ""));
+      })));
+      // compact rows for phones
+      var rows = h("div", {class:"bt-rows"}, [lt, 1 - lt].map(function(t){
+        var serving = !over && s.serving === t;
+        return h("div", {class:"bt-row t-" + col(t) + (serving ? " serving" : "") + (s.over === t ? " won" : "")}, [
+          h("i"), span(teamLabel(t), "bt-code"), span(name(t, 0) + " / " + name(t, 1), "bt-names"),
+          serving ? span("S" + s.serverNum, "bt-srv") : span("", "bt-srv"), span(String(s.score[t]), "bt-sc")
+        ]);
+      }));
+      var status = over ? "Final" : (G.to.active ? "Timeout" : "Live");
+      return h("button", {type:"button", class:"bt-tile" + (over ? " final" : ""), onclick:function(){ if(live) watch(m); }}, [
+        h("div", {class:"bt-head"}, [
+          span(m.label || G.cfg.label, "bt-label"),
+          span(boardClock(g, live), "bt-clock", null), span(status, "bt-status " + status.toLowerCase())
+        ]),
+        court, rows,
+        h("div", {class:"bt-foot"}, [
+          span(over ? (s.over !== null ? teamLabel(s.over) + " wins" : "Ended early") : "Call " + callText().replace(/-/g, " – ")),
+          span(m.umpire ? "Umpire " + m.umpire : "")
+        ])
+      ]);
+    });
+  }
+  function renderBoard(){
+    var box = $("board"), tour = curTour();
+    $("boardTitle").textContent = (tour ? tour.name + " · " : "") + "Live scores";
+    $("boardSub").textContent = board.error ? "Can't reach the server. Retrying…" :
+      board.at ? "Updates every 3 seconds" : "Loading…";
+    var used = assignSlots(), byId = {};
+    board.list.forEach(function(m){ byId[m.id] = m; });
+    box.textContent = ""; board.games = {};
+    var shown = 0;
+    for(var i = 0; i < BOARD_SLOTS; i++){
+      var m = used[i] && byId[used[i]];
+      if(m && m.state){ box.appendChild(boardTile(m)); shown++; }
+      else box.appendChild(h("div", {class:"bt-tile empty"}, [span("Court " + (i + 1) + " is free")]));
+    }
+    box.classList.toggle("none", !shown);
+    if(!shown) box.appendChild(h("p", {class:"empty bt-none", text:board.at ? "No live matches right now. Matches appear here as soon as an umpire starts one." : "Loading live matches…"}));
+    // keep tile clocks in the same DOM order as board.games
+    var clocks = box.querySelectorAll(".bt-clock"), ids = Object.keys(board.games);
+    clocks.forEach(function(c, k){ c.setAttribute("data-id", ids[k]); });
+  }
+  setInterval(function(){
+    if(screen !== "board") return;
+    document.querySelectorAll(".bt-clock[data-id]").forEach(function(c){
+      var x = board.games[c.getAttribute("data-id")]; if(x) c.textContent = boardClock(x.g, x.live);
+    });
+  }, 1000);
+  $("btnFull").addEventListener("click", function(){
+    try{
+      if(document.fullscreenElement) document.exitFullscreen();
+      else document.documentElement.requestFullscreen().catch(function(){ toast("Full screen isn't available here"); });
+    }catch(e){ toast("Full screen isn't available here"); }
+  });
+  if(!document.documentElement.requestFullscreen) $("btnFull").hidden = true;
 
   /* ================= TEAMS ADMIN ================= */
   var adminOpen = null, adminEdit = null, adminDel = null, adminNewTour = false;
@@ -1870,11 +2129,20 @@ body.viewing .bottombar{min-height:0}
       if(adminEdit === t.id){
         list.appendChild(h("div", {class:"team-edit"}, [
           h("div", {class:"grid3"}, [field("edCode", "Code", t.code), field("edP1", "Player 1", t.player1), field("edP2", "Player 2", t.player2)]),
+          (function(){
+            var sel = h("select", {id:"edCat"}, catsOf(cat.tournament_id).map(function(c){ return option(c.id, c.name); }));
+            sel.value = cat.id;
+            return h("div", {class:"field"}, [h("label", {for:"edCat", text:"Category"}), sel]);
+          })(),
           h("div", {class:"btn-pair"}, [
             h("button", {type:"button", class:"btn primary", text:"Save", onclick:function(e){
-              var p1 = val("edP1"), p2 = val("edP2"), code = val("edCode").toUpperCase();
+              var p1 = val("edP1"), p2 = val("edP2"), code = val("edCode").toUpperCase(), catId = $("edCat").value || cat.id;
               if(!p1 || !p2 || !code){ toast("Fill in the code and both players"); return; }
-              adminCall(e.target, "pb_save", {p_kind:"team", p_row:{id:t.id, category_id:cat.id, code:code, player1:p1, player2:p2}}).then(function(){ adminEdit = null; renderAdmin(); toast("Team saved"); });
+              // Moving to another category: give it the next code there unless the code was changed by hand.
+              if(catId !== cat.id && code === t.code.toUpperCase()) code = nextTeamCode(findCat(catId));
+              adminCall(e.target, "pb_save", {p_kind:"team", p_row:{id:t.id, category_id:catId, code:code, player1:p1, player2:p2}}).then(function(){
+                adminEdit = null; if(catId !== cat.id) adminOpen = catId; renderAdmin(); toast(catId !== cat.id ? "Team moved as " + code : "Team saved");
+              });
             }}),
             h("button", {type:"button", class:"btn ghost", text:"Cancel", onclick:function(){ adminEdit = null; renderAdmin(); }})
           ])
@@ -1971,10 +2239,15 @@ body.viewing .bottombar{min-height:0}
     else { var first = !c.started; clockStart(); logEvent("clock", first ? "Clock started." : "Clock resumed."); }
     renderClock();
   });
-  $("btnResults1").addEventListener("click", function(){ backTo = "setup"; show("results"); });
-  $("btnAdmin").addEventListener("click", function(){ adminEdit = adminDel = null; show("admin"); loadData(); });
-  $("btnAdminBack").addEventListener("click", function(){ show("setup"); });
-  $("btnBack").addEventListener("click", function(){ show(G && !viewing ? "game" : "setup"); });
+  $("goHistory").addEventListener("click", function(){ backTo = "home"; show("results"); });
+  $("goAdmin").addEventListener("click", function(){ adminEdit = adminDel = null; show("admin"); loadData(); });
+  $("goCreate").addEventListener("click", function(){ if(G){ show("game"); return; } show("setup"); });
+  $("goResume").addEventListener("click", function(){ show("game"); });
+  $("goBoard").addEventListener("click", function(){ show("board"); });
+  $("btnSetupBack").addEventListener("click", function(){ show("home"); });
+  $("btnBoardBack").addEventListener("click", function(){ show("home"); });
+  $("btnAdminBack").addEventListener("click", function(){ show("home"); });
+  $("btnBack").addEventListener("click", function(){ show(G && !viewing ? "game" : "home"); });
   $("btnMenu").addEventListener("click", function(){
     if(viewing){
       modal("Watching live", G.cfg.label + (viewing.info && viewing.info.umpire ? " · scored by " + viewing.info.umpire : ""), [
@@ -1990,6 +2263,7 @@ body.viewing .bottombar{min-height:0}
       {label:"Mirror court view (I moved to the other post)", fn:function(){
         G.cfg.team1Left = !G.cfg.team1Left; logEvent("view", "Court view mirrored (umpire moved to the other post)."); render(); toast("Court view mirrored");
       }},
+      {label:"Home (the game keeps going)", fn:function(){ show("home"); }},
       {label:"All matches", fn:function(){ backTo = "game"; show("results"); }},
       {label:"End game and save score", fn:function(){
         modal("End game now?", "The current score is saved as ended early.", [
@@ -2012,7 +2286,7 @@ body.viewing .bottombar{min-height:0}
     var g = (saved && saved.G) || store.get(K_GAME, null);
     if(g && g.cfg && g.s) G = upgradeGame(g);
     if(!ump()){ show("login"); return; }
-    show(G ? "game" : "setup");
+    show(G ? "game" : "home");
     loadData();
     scheduleSync(500);
   }
