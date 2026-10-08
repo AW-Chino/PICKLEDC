@@ -1,6 +1,6 @@
 // Serve the app from the phone's cache first, then refresh the cache in the background.
 // Bump CACHE when you want old phones to drop everything and start fresh.
-const CACHE = "pbu-v8";
+const CACHE = "pbu-v9";
 const ASSETS = ["./", "./index.html", "./manifest.webmanifest", "./icon-192.png", "./icon-512.png"];
 
 self.addEventListener("install", (e) => {
