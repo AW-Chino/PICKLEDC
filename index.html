@@ -235,7 +235,9 @@ textarea{resize:vertical;min-height:90px}
 .bt-court-no{flex:none;font-family:var(--font-display);font-weight:700;text-transform:uppercase;letter-spacing:.04em;padding:1px 8px;border-radius:6px;background:var(--fg);color:var(--bg)}
 .phase-line{margin:0 0 2px;font-weight:700;font-size:14px}
 .home-tile.admin-tile{border:2px dashed var(--warn);background:var(--warn-soft)}
-.team-row.locked{grid-template-columns:64px 1fr auto}
+.team-row.locked{grid-template-columns:1fr auto}
+.team-row.no-code{grid-template-columns:1fr}
+.team-row.mine{grid-template-columns:1fr auto auto}
 /* admin settings */
 .phase-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
 .phase-list li{padding:8px 10px;border-radius:9px;border:1px solid var(--line);display:grid;grid-template-columns:1fr auto;gap:2px 8px}
@@ -278,13 +280,14 @@ textarea{resize:vertical;min-height:90px}
 .bt-status{font-size:10px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;padding:2px 7px;border-radius:999px;background:var(--surface-2);color:var(--muted)}
 .bt-status.live{background:var(--t1);color:var(--on-team)}
 .bt-status.timeout{background:var(--warn-soft);color:var(--warn)}
+.bt-status.over{background:var(--fg);color:var(--bg)}
 .bt-court{display:none}
 .bt-rows{display:flex;flex-direction:column;gap:4px}
-.bt-row{display:grid;grid-template-columns:8px auto 1fr auto auto;gap:8px;align-items:center;padding:6px 8px;border-radius:9px}
+.bt-row{display:grid;grid-template-columns:8px 1fr auto auto;gap:8px;align-items:center;padding:6px 8px;border-radius:9px}
 .bt-row i{width:8px;height:26px;border-radius:3px;background:var(--team)}
 .bt-row.serving{background:var(--team-soft)}
 .bt-code{font-family:var(--font-display);font-weight:700;font-size:18px}
-.bt-names{min-width:0;overflow-wrap:anywhere;font-size:14px;color:var(--muted)}
+.bt-names{min-width:0;overflow-wrap:break-word;font-size:15px;font-weight:600}
 .bt-srv{font-size:11px;font-weight:700;padding:1px 6px;border-radius:999px;background:var(--ball);color:#1b2a22;min-width:0}
 .bt-srv:empty{background:none;padding:0}
 .bt-sc{font-family:var(--font-display);font-weight:700;font-size:34px;line-height:1;font-variant-numeric:tabular-nums;min-width:1.4em;text-align:right}
@@ -861,6 +864,11 @@ body.viewing .bottombar{min-height:0}
     while(start > 1 && PARTICLES[w[start - 1].toLowerCase()]) start--;
     return {first:w.slice(0, start).join(" "), last:w.slice(start).join(" ")};
   }
+  // "Chino Dela Cruz" -> "C. Dela Cruz"
+  function initialName(full){
+    var n = splitName(full);
+    return n.first ? n.first.charAt(0).toUpperCase() + ". " + n.last : n.last;
+  }
   // Two lines on court: small first name, larger last name. Nothing is cut off; long names wrap.
   function fillName(el, full){
     var n = splitName(full);
@@ -1263,7 +1271,7 @@ body.viewing .bottombar{min-height:0}
     var teams = $("selCat").value ? teamsOf($("selCat").value) : [], busy = busyTeams(), onCourt = busyPlayers();
     ["selTeamA", "selTeamB"].forEach(function(id){
       fillSelect($(id), [option("", teams.length ? "Choose team" : "Choose a category first")].concat(teams.map(function(t){
-        var o = option(t.id, t.code + " · " + t.player1 + " / " + t.player2);
+        var o = option(t.id, t.player1 + " / " + t.player2);
         if(busy[t.id]){ o.disabled = true; o.textContent += " (in a match, " + busy[t.id].umpire + ")"; }
         else{
           var playing = [t.player1, t.player2].filter(function(n){ return onCourt[n.trim().toLowerCase()]; });
@@ -1278,23 +1286,45 @@ body.viewing .bottombar{min-height:0}
   setInterval(function(){ if(screen === "setup" && ump() && navigator.onLine !== false) loadData(); }, 20000);
   $("selTour").addEventListener("change", function(){ store.set(K_TOUR, $("selTour").value); fillTourSetup(); });
   $("selCat").addEventListener("change", function(){ clearToss(); fillTeams(); });
+  // The baseline player names the team, so a new baseline renames it (and voids an earlier toss).
+  document.querySelectorAll('input[name="baseA"], input[name="baseB"]').forEach(function(r){
+    r.addEventListener("change", function(){ clearToss(); refreshLabels(); });
+  });
   ["selTeamA", "selTeamB"].forEach(function(id){
     $(id).addEventListener("change", function(){ clearToss(); setRadio(id === "selTeamA" ? "baseA" : "baseB", "0"); refreshLabels(); });
   });
   ["t1a", "t1b", "t2a", "t2b"].forEach(function(id){ $(id).addEventListener("input", refreshLabels); });
 
   // Everything the setup needs to know about one side, in either mode.
+  // Teams are called by their baseline player: label "C. Dela Cruz", short "Dela Cruz".
+  // Codes like LNMD-01 stay in the data only.
   function teamInfo(k){
+    var t, p, base, out;
     if(mode() === "open"){
-      var p = k === "A" ? [$("t1a").value.trim(), $("t1b").value.trim()] : [$("t2a").value.trim(), $("t2b").value.trim()];
-      return {key:k, label:"Team " + k, code:null, id:null, p:p, base:0};
+      p = k === "A" ? [$("t1a").value.trim(), $("t1b").value.trim()] : [$("t2a").value.trim(), $("t2b").value.trim()];
+      out = {key:k, code:null, id:null, p:p, base:0};
+    }else{
+      t = findTeam($(k === "A" ? "selTeamA" : "selTeamB").value);
+      if(!t) return {key:k, label:"Team " + k, short:"Team " + k, code:null, id:null, p:["", ""], base:0, missing:true};
+      out = {key:k, code:t.code, id:t.id, p:[t.player1, t.player2], base:toInt(radio(k === "A" ? "baseA" : "baseB"), 0)};
     }
-    var t = findTeam($(k === "A" ? "selTeamA" : "selTeamB").value);
-    if(!t) return {key:k, label:"Team " + k, code:null, id:null, p:["", ""], base:0, missing:true};
-    return {key:k, label:t.code, code:t.code, id:t.id, p:[t.player1, t.player2], base:toInt(radio(k === "A" ? "baseA" : "baseB"), 0)};
+    var lead = out.p[out.base];
+    out.label = lead ? initialName(lead) : "Team " + k;
+    out.short = lead ? splitName(lead).last : "Team " + k;
+    return out;
+  }
+  // Both sides together; if the two names would look the same, use the baseline's full name.
+  function teamPair(){
+    var A = teamInfo("A"), B = teamInfo("B");
+    if(!A.missing && !B.missing && A.label.toLowerCase() === B.label.toLowerCase()){
+      A.label = A.short = A.p[A.base]; B.label = B.short = B.p[B.base];
+    }else if(A.short.toLowerCase() === B.short.toLowerCase()){
+      A.short = A.label; B.short = B.label;
+    }
+    return {A:A, B:B};
   }
   function refreshLabels(){
-    var T = {A:teamInfo("A"), B:teamInfo("B")};
+    var T = teamPair();
     document.querySelectorAll("[data-label]").forEach(function(s){ s.textContent = T[s.getAttribute("data-label")].label; });
     document.querySelectorAll("[data-base]").forEach(function(s){
       var key = s.getAttribute("data-base"), t = T[key[0]], i = +key[1];
@@ -1322,8 +1352,8 @@ body.viewing .bottombar{min-height:0}
     if(msg){ e.textContent = msg; e.hidden = false; } else e.hidden = true;
     return !!msg;
   }
-  function checkTeams(A, B){
-    if(!radio("court")) return setupError("Choose the court (1 to 4).");
+  function checkTeams(A, B, needCourt){
+    if(needCourt && !radio("court")) return setupError("Choose the court (1 to 4).");
     if(mode() === "tournament"){
       if(!$("selCat").value) return setupError("Choose a category.");
       if(A.missing || B.missing) return setupError("Choose both teams.");
@@ -1338,8 +1368,8 @@ body.viewing .bottombar{min-height:0}
 
   $("setupForm").addEventListener("submit", function(e){
     e.preventDefault();
-    var A = teamInfo("A"), B = teamInfo("B"), T = {A:A, B:B};
-    if(checkTeams(A, B)) return;
+    var T = teamPair(), A = T.A, B = T.B;
+    if(checkTeams(A, B, true)) return;
     var target = toInt(radio("target"), 11);
     var raw = {
       mode: mode(), A: mode() === "open" ? A.p : undefined, B: mode() === "open" ? B.p : undefined,
@@ -1357,8 +1387,7 @@ body.viewing .bottombar{min-height:0}
     var keys = serveA ? ["A", "B"] : ["B", "A"];
     function ordered(t){ return [t.p[t.base], t.p[1 - t.base]]; }
     var cat = mode() === "tournament" ? findCat($("selCat").value) : null, tour = curTour();
-    var label = cat ? cat.name + " · " + A.code + " vs " + B.code
-                    : "Open play · " + A.p.join(" / ") + " vs " + B.p.join(" / ");
+    var label = (cat ? cat.name : "Open play") + " · " + A.label + " vs " + B.label;
     var cfg = {
       mode: mode(), label: label, phase: phase().name,
       tournamentId: cat && tour ? tour.id : null, categoryId: cat ? cat.id : null,
@@ -1455,13 +1484,14 @@ body.viewing .bottombar{min-height:0}
     return {step:"call", T:T, caller:{team: r < 2 ? "A" : "B", idx: r % 2}, tokens:[a, c], win: rnd(2)};
   }
   function other(k){ return k === "A" ? "B" : "A"; }
-  function tName(k){ return toss.T[k].label; }
+  function tName(k){ return toss.T[k].label; }    // "C. Dela Cruz"
+  function tShort(k){ return toss.T[k].short; }   // "Dela Cruz"
   function tPlayers(k){ return toss.T[k].p[0] + " & " + toss.T[k].p[1]; }
 
   $("btnToss").addEventListener("click", function(){
-    var A = teamInfo("A"), B = teamInfo("B");
+    var T = teamPair(), A = T.A, B = T.B;
     if(checkTeams(A, B)) return;
-    toss = newToss({A:A, B:B});
+    toss = newToss(T);
     renderToss();
   });
   function tossBtn(label, cls, fn){ return h("button", {type:"button", class:"btn " + (cls || ""), text:label, onclick:fn}); }
@@ -1475,7 +1505,7 @@ body.viewing .bottombar{min-height:0}
 
     if(t.step === "call"){
       sh.appendChild(h("h3", {text:"Coin toss"}));
-      sh.appendChild(para(["Caller: ", b(callerName), " (" + tName(t.caller.team) + "). Ask them to pick one, then tap their pick."]));
+      sh.appendChild(para(["Caller: ", b(callerName), ". Ask them to pick one, then tap their pick."]));
       sh.appendChild(h("div", {class:"toss-tokens"}, t.tokens.map(function(tok, i){
         return tossBtn(tok, "toss-token", function(){
           t.pick = i;
@@ -1501,16 +1531,16 @@ body.viewing .bottombar{min-height:0}
       }else if(t.step === "pickEnd"){
         var who = other(t.serve);
         sh.appendChild(h("h3", {text:tName(who) + " picks the court"}));
-        sh.appendChild(para([tName(who) + " receives. " + tName(t.serve) + " serves first. Where does " + tName(who) + " start, seen from your spot at the net post?"]));
+        sh.appendChild(para([tShort(t.serve) + " serves. " + tShort(who) + " receives. Where does " + tName(who) + " start, seen from your spot at the net post?"]));
         q.appendChild(tossBtn(tName(who) + " on my left", "primary", function(){ t.left = who; t.step = "done"; renderToss(); }));
         q.appendChild(tossBtn(tName(who) + " on my right", "", function(){ t.left = other(who); t.step = "done"; renderToss(); }));
       }else if(t.step === "done"){
         sh.appendChild(h("h3", {text:"Ready"}));
-        sh.appendChild(para([b(tName(t.serve) + " serves first (0 – 0 – 2)."), " " + tName(other(t.serve)) + " receives. " + tName(t.left) + " starts on your left, " + tName(other(t.left)) + " on your right."]));
+        sh.appendChild(para([b(tShort(t.serve) + " serves. " + tShort(other(t.serve)) + " receives."), " First serve 0 – 0 – 2. " + tName(t.left) + " on your left, " + tName(other(t.left)) + " on your right."]));
         q.appendChild(tossBtn("Use this", "primary", function(){
           setRadio("serveTeam", t.serve); setRadio("leftTeam", t.left); setRadio("firstServe", "2");
-          var text = "Coin toss: " + callerName + " (" + tName(t.caller.team) + ") called " + t.tokens[t.pick] + ", winning pick " + t.tokens[t.win] + " (" + (right ? "correct" : "wrong") + "). " +
-            tName(w) + " won and chose " + t.chose + ". " + tName(t.serve) + " serves, " + tName(t.left) + " on the umpire's left.";
+          var text = "Coin toss: " + callerName + " called " + t.tokens[t.pick] + ", winning pick " + t.tokens[t.win] + " (" + (right ? "correct" : "wrong") + "). " +
+            tName(w) + " won and chose " + t.chose + ". " + tShort(t.serve) + " serves. " + tShort(other(t.serve)) + " receives. " + tName(t.left) + " on the umpire's left.";
           $("tossResult").textContent = text;
           tossInfo = text;
           toss = null; renderToss(); toast("Toss applied");
@@ -1600,7 +1630,8 @@ body.viewing .bottombar{min-height:0}
       id: G.id, tournament_id: c.tournamentId || null, category_id: c.categoryId || null,
       team_a: c.teams.A.id || null, team_b: c.teams.B.id || null,
       mode: c.mode, label: c.label,
-      players: {A:{code:c.teams.A.label, p1:c.teams.A.p[0], p2:c.teams.A.p[1]}, B:{code:c.teams.B.label, p1:c.teams.B.p[0], p2:c.teams.B.p[1]}},
+      players: {A:{code:c.teams.A.code || null, label:c.teams.A.label, p1:c.teams.A.p[0], p2:c.teams.A.p[1]},
+                B:{code:c.teams.B.code || null, label:c.teams.B.label, p1:c.teams.B.p[0], p2:c.teams.B.p[1]}},
       umpire: G.umpire, status: G.status,
       score_a: s.score[a], score_b: s.score[bb],
       winner: s.over !== null ? c.keys[s.over] : (G.status !== "live" && s.score[a] !== s.score[bb] ? (s.score[a] > s.score[bb] ? "A" : "B") : null),
@@ -1862,7 +1893,7 @@ body.viewing .bottombar{min-height:0}
       else if(rem < LOCK_MS){ sub = "Under 2:00 · no timeouts"; state = "warn"; }
       else sub = "Remaining";
     }else{ txt = fmt(shownElapsed()); sub = "Game time"; }
-    if(G.s.over !== null) sub = "Final";
+    if(G.s.over !== null) sub = "Game over";
     else if(!c.started) sub = "Ready";
     else if(!c.since) sub = G.to.active ? "Timeout" : "Paused";
     if(txt !== lastClock){ $("clock").textContent = txt; lastClock = txt; }
@@ -1961,7 +1992,7 @@ body.viewing .bottombar{min-height:0}
         var p = (m.players && m.players[k]) || {code:"Team " + k, p1:"", p2:""};
         var sc = k === "A" ? m.score_a : m.score_b;
         return h("div", {class:"res-row t-" + (k === "A" ? 0 : 1) + (m.winner === k ? " win" : (m.winner ? " lose" : ""))}, [
-          h("i"), span(p.code + " · " + p.p1 + " / " + p.p2, "nm"), span(String(sc), "sc")
+          h("i"), span(p.p1 + " / " + p.p2, "nm"), span(String(sc), "sc")
         ]);
       });
       box.appendChild(h("div", {class:"res"}, [
@@ -2005,7 +2036,8 @@ body.viewing .bottombar{min-height:0}
     var head = $("logHead"); head.textContent = "";
     var pa = (m.players && m.players.A) || {}, pb = (m.players && m.players.B) || {};
     head.appendChild(h("div", {class:"log-score"}, [
-      span(pa.code + " " + m.score_a, m.winner === "A" ? "win" : ""), span(" – "), span(m.score_b + " " + pb.code, m.winner === "B" ? "win" : "")
+      span((pa.label || initialName(pa.p1 || "")) + " " + m.score_a, m.winner === "A" ? "win" : ""), span(" – "),
+      span(m.score_b + " " + (pb.label || initialName(pb.p1 || "")), m.winner === "B" ? "win" : "")
     ]));
     head.appendChild(h("p", {class:"hint", text:(m.umpire ? "Umpire " + m.umpire + " · " : "") + shortDate(m.started_at) + (m.duration_ms ? " · " + fmt(m.duration_ms) : "")}));
     var list = $("logList"); list.textContent = "";
@@ -2216,14 +2248,14 @@ body.viewing .bottombar{min-height:0}
   }
   function renderAddTeamInfo(){
     var cat = findCat($("atCat").value), box = $("atList");
-    $("atCode").textContent = cat ? "This team will be " + nextTeamCode(cat) + "." : "";
+    $("atCode").textContent = cat && isAdmin() ? "Code in our records: " + nextTeamCode(cat) + "." : "";
     box.textContent = "";
     if(!cat) return;
     var teams = teamsOf(cat.id);
     box.appendChild(h("h2", null, [cat.name, span(teams.length + " team" + (teams.length === 1 ? "" : "s"))]));
     if(!teams.length) box.appendChild(h("p", {class:"hint", text:"No teams yet in this category."}));
     teams.forEach(function(t){
-      box.appendChild(h("div", {class:"team-row at-row"}, [span(t.code, "tr-code"), span(t.player1 + " / " + t.player2, "tr-names")]));
+      box.appendChild(h("div", {class:"team-row at-row" + (isAdmin() ? "" : " no-code")}, [isAdmin() ? span(t.code, "tr-code") : null, span(t.player1 + " / " + t.player2, "tr-names")]));
     });
   }
   $("atCat").addEventListener("change", function(){ lastAddCat = $("atCat").value; renderAddTeamInfo(); });
@@ -2242,7 +2274,7 @@ body.viewing .bottombar{min-height:0}
     rpc("pb_save", {p_pass:u.pass, p_kind:"team", p_row:{category_id:cat.id, code:code, player1:p1, player2:p2}}).then(function(){
       lastAddCat = cat.id;
       $("atP1").value = ""; $("atP2").value = "";
-      toast("Added " + code + " · " + p1 + " / " + p2);
+      toast("Added " + p1 + " / " + p2);
       return loadData();
     }).then(function(){ $("atP1").focus(); }).catch(function(x){
       err.textContent = x && x.auth ? "The tournament password changed. Sign out and sign in again." : "Couldn't add the team. Check your internet and try again.";
@@ -2307,9 +2339,13 @@ body.viewing .bottombar{min-height:0}
     });
     return used;
   }
-  function boardClock(g, live){
+  // "C. Dela Cruz won 11 – 7", or the score if it ended early.
+  function resultLine(s){
+    if(s.over !== null) return teamLabel(s.over) + " won " + s.score[s.over] + " – " + s.score[1 - s.over];
+    return "Ended early: " + teamLabel(0) + " " + s.score[0] + " – " + s.score[1] + " " + teamLabel(1);
+  }  function boardClock(g, live){
     return withGame(g, function(){
-      if(!live || G.s.over !== null) return "Final";
+      if(!live || G.s.over !== null) return "Game over";
       if(G.to.active) return "Timeout " + teamLabel(G.to.active.team);
       if(!G.clock.started) return "Ready";
       var lim = limitMs(), t = lim ? fmt(Math.max(0, remaining()), true) : fmt(shownElapsed());
@@ -2345,20 +2381,20 @@ body.viewing .bottombar{min-height:0}
       var rows = h("div", {class:"bt-rows"}, [lt, 1 - lt].map(function(t){
         var serving = !over && s.serving === t;
         return h("div", {class:"bt-row t-" + col(t) + (serving ? " serving" : "") + (s.over === t ? " won" : "")}, [
-          h("i"), span(teamLabel(t), "bt-code"), span(name(t, 0) + " / " + name(t, 1), "bt-names"),
+          h("i"), span(name(t, 0) + " / " + name(t, 1), "bt-names"),
           serving ? span("S" + s.serverNum, "bt-srv") : span("", "bt-srv"), span(String(s.score[t]), "bt-sc")
         ]);
       }));
-      var status = over ? "Final" : (G.to.active ? "Timeout" : "Live");
+      var status = over ? "Game over" : (G.to.active ? "Timeout" : "Live");
       return h("button", {type:"button", class:"bt-tile" + (over ? " final" : ""), onclick:function(){ if(live) watch(m); }}, [
         h("div", {class:"bt-head"}, [
           m.court ? span("Court " + m.court, "bt-court-no") : null,
           span(m.label || G.cfg.label, "bt-label"),
-          span(boardClock(g, live), "bt-clock", null), span(status, "bt-status " + status.toLowerCase())
+          span(boardClock(g, live), "bt-clock", null), span(status, "bt-status " + (over ? "over" : status.toLowerCase()))
         ]),
         court, rows,
         h("div", {class:"bt-foot"}, [
-          span(over ? (s.over !== null ? teamLabel(s.over) + " wins" : "Ended early") : "Call " + callText().replace(/-/g, " – ")),
+          span(over ? resultLine(s) : "Call " + callText().replace(/-/g, " – ")),
           span(m.umpire ? "Umpire " + m.umpire : "")
         ])
       ]);
@@ -2504,7 +2540,7 @@ body.viewing .bottombar{min-height:0}
   function categoryCard(cat){
     var teams = teamsOf(cat.id);
     var det = h("details", {class:"card cat-card", open: adminOpen === cat.id}, [
-      h("summary", null, [span(cat.name, "cat-name"), span(cat.code + " · " + teams.length + " team" + (teams.length === 1 ? "" : "s"), "cat-meta")])
+      h("summary", null, [span(cat.name, "cat-name"), span((isAdmin() ? cat.code + " · " : "") + teams.length + " team" + (teams.length === 1 ? "" : "s"), "cat-meta")])
     ]);
     det.addEventListener("toggle", function(){ if(det.open) adminOpen = cat.id; else if(adminOpen === cat.id) adminOpen = null; });
 
@@ -2513,7 +2549,8 @@ body.viewing .bottombar{min-height:0}
     teams.forEach(function(t){
       if(adminEdit === t.id){
         list.appendChild(h("div", {class:"team-edit"}, [
-          h("div", {class:"grid3"}, [field("edCode", "Code", t.code), field("edP1", "Player 1", t.player1), field("edP2", "Player 2", t.player2)]),
+          isAdmin() ? h("div", {class:"grid3"}, [field("edCode", "Code", t.code), field("edP1", "Player 1", t.player1), field("edP2", "Player 2", t.player2)])
+                    : h("div", {class:"grid2"}, [field("edP1", "Player 1", t.player1), field("edP2", "Player 2", t.player2)]),
           (function(){
             var sel = h("select", {id:"edCat"}, catsOf(cat.tournament_id).map(function(c){ return option(c.id, c.name); }));
             sel.value = cat.id;
@@ -2521,7 +2558,7 @@ body.viewing .bottombar{min-height:0}
           })(),
           h("div", {class:"btn-pair"}, [
             h("button", {type:"button", class:"btn primary", text:"Save", onclick:function(e){
-              var p1 = val("edP1"), p2 = val("edP2"), code = val("edCode").toUpperCase(), catId = $("edCat").value || cat.id;
+              var p1 = val("edP1"), p2 = val("edP2"), code = isAdmin() ? val("edCode").toUpperCase() : t.code, catId = $("edCat").value || cat.id;
               if(!p1 || !p2 || !code){ toast("Fill in the code and both players"); return; }
               // Moving to another category: give it the next code there unless the code was changed by hand.
               if(catId !== cat.id && code === t.code.toUpperCase()) code = nextTeamCode(findCat(catId));
@@ -2537,12 +2574,12 @@ body.viewing .bottombar{min-height:0}
       var del = adminDel === t.id;
       if(t.official && !isAdmin()){
         list.appendChild(h("div", {class:"team-row locked"}, [
-          span(t.code, "tr-code"), span(t.player1 + " / " + t.player2, "tr-names"), span("Official", "chip")
+          span(t.player1 + " / " + t.player2, "tr-names"), span("Official", "chip")
         ]));
         return;
       }
-      list.appendChild(h("div", {class:"team-row"}, [
-        span(t.code, "tr-code"), span(t.player1 + " / " + t.player2, "tr-names"),
+      list.appendChild(h("div", {class:"team-row" + (isAdmin() ? "" : " mine")}, [
+        isAdmin() ? span(t.code, "tr-code") : null, span(t.player1 + " / " + t.player2, "tr-names"),
         h("button", {type:"button", class:"btn small", text:"Edit", onclick:function(){ adminEdit = t.id; adminDel = null; renderAdmin(); }}),
         h("button", {type:"button", class:"btn small " + (del ? "danger" : "ghost"), text:del ? "Confirm" : "Delete", onclick:function(e){
           if(!del){ adminDel = t.id; renderAdmin(); return; }
@@ -2555,7 +2592,7 @@ body.viewing .bottombar{min-height:0}
     // add one team
     var pre = "ad" + cat.id.slice(0, 8);
     det.appendChild(h("div", {class:"sub-card"}, [
-      h("h4", {text:"Add team " + nextTeamCode(cat)}),
+      h("h4", {text:"Add team"}),
       h("div", {class:"grid2"}, [field(pre + "p1", "Player 1", "", "e.g. Santos"), field(pre + "p2", "Player 2", "", "e.g. Reyes")]),
       h("button", {type:"button", class:"btn primary", text:"Add team", onclick:function(e){
         var p1 = val(pre + "p1"), p2 = val(pre + "p2");
