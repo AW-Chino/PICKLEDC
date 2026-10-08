@@ -1534,10 +1534,10 @@ body.viewing .bottombar{min-height:0}
     try{ var a = new Uint32Array(1); crypto.getRandomValues(a); return a[0] % n; }
     catch(e){ return Math.floor(Math.random() * n); }
   }
+  // One character per option: a single letter or a single number (I and O left out to avoid 1 and 0 mix-ups).
   function token(){
-    var L = "ABCDEFGHJKLMNPQRSTUVWXYZ", D = "123456789", k = rnd(3);
-    var l = L[rnd(L.length)], d = D[rnd(D.length)];
-    return k === 0 ? l : (k === 1 ? d : l + d);
+    var L = "ABCDEFGHJKLMNPQRSTUVWXYZ", D = "123456789";
+    return rnd(2) === 0 ? L[rnd(L.length)] : D[rnd(D.length)];
   }
   function newToss(T){
     var a = token(), c = token();
