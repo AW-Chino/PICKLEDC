@@ -1192,12 +1192,25 @@ body.viewing .bottombar{min-height:0}
     });
     return busy;
   }
+  // Players (by lowercase name) who are on court in someone else's live match.
+  function busyPlayers(){
+    var on = {}, busy = busyTeams();
+    Object.keys(busy).forEach(function(id){
+      var t = findTeam(id);
+      if(t) [t.player1, t.player2].forEach(function(n){ on[n.trim().toLowerCase()] = n; });
+    });
+    return on;
+  }
   function fillTeams(){
-    var teams = $("selCat").value ? teamsOf($("selCat").value) : [], busy = busyTeams();
+    var teams = $("selCat").value ? teamsOf($("selCat").value) : [], busy = busyTeams(), onCourt = busyPlayers();
     ["selTeamA", "selTeamB"].forEach(function(id){
       fillSelect($(id), [option("", teams.length ? "Choose team" : "Choose a category first")].concat(teams.map(function(t){
         var o = option(t.id, t.code + " · " + t.player1 + " / " + t.player2);
         if(busy[t.id]){ o.disabled = true; o.textContent += " (in a match, " + busy[t.id].umpire + ")"; }
+        else{
+          var playing = [t.player1, t.player2].filter(function(n){ return onCourt[n.trim().toLowerCase()]; });
+          if(playing.length) o.textContent += " (" + playing.join(" & ") + " on court)";
+        }
         return o;
       })), true);
     });
@@ -1321,18 +1334,32 @@ body.viewing .bottombar{min-height:0}
     var btn = $("btnStart"), u = ump();
     btn.disabled = true; btn.textContent = "Checking teams…";
     G = game; var summary = matchSummary(); G = null;
-    rpc("pb_start_match", {p_pass:u.pass, p_match:summary}).then(function(r){
-      if(r && r.ok){ begin(); return; }
-      var busy = [A, B].filter(function(t){ return r && (t.id === r.team_a || t.id === r.team_b); }).map(function(t){ return t.label; });
-      setupError((busy.join(" and ") || "A team") + (busy.length > 1 ? " are" : " is") + " already in a live match (" + (r.label || "") + ", umpire " + (r.umpire || "unknown") + "). Choose another team, or wait for that match to finish.");
-      loadData();
-    }).catch(function(err){
-      if(err.auth){ setupError("The tournament password changed. Sign out and sign in again."); return; }
-      modal("Can't check the teams", "There's no internet, so the app can't lock these teams for you. If you start anyway, another umpire could pick the same team until your phone is back online.", [
-        {label:"Start anyway", cls:"primary", fn:function(){ begin("Started offline: teams were not locked."); }},
-        {label:"Wait"}
-      ]);
-    }).then(function(){ btn.disabled = false; btn.textContent = "Start game"; });
+    function claim(allowBusyPlayers){
+      btn.disabled = true; btn.textContent = "Checking teams…";
+      if(allowBusyPlayers) summary.allow_busy_players = true;
+      rpc("pb_start_match", {p_pass:u.pass, p_match:summary}).then(function(r){
+        if(r && r.ok){ begin(allowBusyPlayers ? "Started while " + allowBusyPlayers + " was on another court." : ""); return; }
+        if(r && r.reason === "player"){
+          // Same person on two teams: warn, but let the umpire decide.
+          modal("Player already on court", r.players + " is playing right now in " + (r.label || "another match") +
+            " (umpire " + (r.umpire || "unknown") + "). Start this match anyway?", [
+            {label:"Start anyway", cls:"primary", fn:function(){ claim(r.players); }},
+            {label:"Choose other teams"}
+          ]);
+          return;
+        }
+        var busy = [A, B].filter(function(t){ return r && (t.id === r.team_a || t.id === r.team_b); }).map(function(t){ return t.label; });
+        setupError((busy.join(" and ") || "A team") + (busy.length > 1 ? " are" : " is") + " already in a live match (" + (r.label || "") + ", umpire " + (r.umpire || "unknown") + "). Choose another team, or wait for that match to finish.");
+        loadData();
+      }).catch(function(err){
+        if(err.auth){ setupError("The tournament password changed. Sign out and sign in again."); return; }
+        modal("Can't check the teams", "There's no internet, so the app can't lock these teams for you. If you start anyway, another umpire could pick the same team until your phone is back online.", [
+          {label:"Start anyway", cls:"primary", fn:function(){ begin("Started offline: teams were not locked."); }},
+          {label:"Wait"}
+        ]);
+      }).then(function(){ btn.disabled = false; btn.textContent = "Start game"; });
+    }
+    claim(false);
   });
 
   /* ---------- coin toss ---------- */
