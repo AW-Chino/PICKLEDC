@@ -114,10 +114,15 @@ button:disabled{cursor:default}
 .c-lines{stroke:var(--court-line);stroke-width:2.5;fill:none}
 .c-net{stroke:var(--net);stroke-width:5}
 .c-serve{stroke:var(--ball);stroke-width:2.5;stroke-dasharray:7 6;fill:none;transition:all .35s ease}
-.pl{position:absolute;transform:translate(-50%,-50%);max-width:31%;padding:4px 8px 3px;border-radius:8px;
+.pl{position:absolute;transform:translate(-50%,-50%);max-width:42%;padding:4px 7px 3px;border-radius:8px;
   background:var(--team);color:var(--on-team);text-align:center;transition:left .35s ease,top .35s ease;
   box-shadow:0 1px 0 rgba(0,0,0,.25);line-height:1.1}
-.pl-name{display:block;font-family:var(--font-display);font-weight:700;font-size:17px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pl-name{display:flex;flex-direction:column;align-items:center;font-family:var(--font-display);font-weight:700;line-height:1.05;font-size:16px}
+.pl-first{font-family:var(--font-body);font-weight:600;font-size:.7em;line-height:1.15;opacity:.9}
+/* Words never break in the middle; long surnames get a smaller size instead. */
+.pl-last{font-size:1em;text-transform:uppercase;letter-spacing:.02em}
+.pl-last.l1{font-size:.86em}
+.pl-last.l2{font-size:.74em}
 .pl-tags{display:block;font-size:10px;font-weight:700;letter-spacing:.06em;white-space:nowrap;opacity:.92}
 .pl.is-server{outline:3px solid var(--ball);outline-offset:1px}
 .pl.is-server::before{content:"";position:absolute;top:-7px;right:-7px;width:13px;height:13px;border-radius:50%;background:var(--ball);box-shadow:0 0 0 2px var(--court)}
@@ -138,7 +143,7 @@ button:disabled{cursor:default}
 .team-head{display:flex;justify-content:space-between;align-items:center;gap:6px}
 .team-name{font-family:var(--font-display);font-weight:700;font-size:17px;text-transform:uppercase;letter-spacing:.04em}
 .serve-pill{font-size:10px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;padding:2px 7px;border-radius:999px;background:var(--team);color:var(--on-team)}
-.team-players{font-size:13px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.team-players{font-size:13px;color:var(--muted);overflow-wrap:anywhere}
 .team-score{font-family:var(--font-display);font-weight:700;font-size:54px;line-height:.9;font-variant-numeric:tabular-nums}
 .team-check{font-size:12px;color:var(--muted);min-height:2.6em}
 .team-check b{color:var(--fg)}
@@ -172,7 +177,7 @@ button:disabled{cursor:default}
 .to-sheet.done .to-clock{color:var(--danger);animation:blink 1s steps(2) infinite}
 @keyframes blink{50%{opacity:.35}}
 .final{display:grid;grid-template-columns:1fr auto;gap:4px 12px;align-items:baseline}
-.final .nm{font-weight:600;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.final .nm{font-weight:600;min-width:0;overflow-wrap:anywhere}
 .final .sc{font-family:var(--font-display);font-size:34px;font-weight:700;font-variant-numeric:tabular-nums}
 .final .win{color:var(--fg)} .final .lose{color:var(--muted)}
 .toss-btn{border-color:var(--fg);font-weight:700}
@@ -189,7 +194,7 @@ button:disabled{cursor:default}
 .res-meta{display:flex;justify-content:space-between;gap:8px;font-size:12px;color:var(--muted);flex-wrap:wrap}
 .res-row{display:grid;grid-template-columns:10px 1fr auto;gap:8px;align-items:center}
 .res-row i{width:10px;height:10px;border-radius:3px;background:var(--team)}
-.res-row .nm{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.res-row .nm{min-width:0;overflow-wrap:anywhere}
 .res-row .sc{font-family:var(--font-display);font-weight:700;font-size:26px;font-variant-numeric:tabular-nums}
 .res-row.win .nm{font-weight:700}
 .res-row.lose{color:var(--muted)}
@@ -208,7 +213,7 @@ select,textarea{width:100%;font:inherit;font-size:16px;padding:11px 12px;border:
 textarea{resize:vertical;min-height:90px}
 .field input[type=password]{width:100%;font:inherit;font-size:17px;padding:11px 12px;border:1px solid var(--line);border-radius:9px;background:var(--bg);color:var(--fg)}
 .match-line{margin:0;display:flex;justify-content:space-between;gap:8px;font-size:12px;color:var(--muted)}
-.ml-label{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600;color:var(--fg)}
+.ml-label{min-width:0;overflow-wrap:anywhere;font-weight:600;color:var(--fg)}
 .ml-sync{flex:none}
 .ml-sync.pending{color:var(--warn)}
 .ml-sync.live{color:var(--t1);font-weight:700}
@@ -222,6 +227,12 @@ textarea{resize:vertical;min-height:90px}
 .home-tile.resume{background:var(--t1-soft);border:2px solid var(--t1)}
 .home-tile:active{transform:translateY(1px)}
 .home-pair{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.court-seg label{min-width:60px}
+.court-seg label span{flex-direction:column;line-height:1;gap:2px;min-height:54px}
+.court-seg small{font-family:var(--font-body);font-size:10px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--warn)}
+.court-seg small:empty{display:none}
+.court-seg input:checked+span small{color:var(--bg)}
+.bt-court-no{flex:none;font-family:var(--font-display);font-weight:700;text-transform:uppercase;letter-spacing:.04em;padding:1px 8px;border-radius:6px;background:var(--fg);color:var(--bg)}
 .phase-line{margin:0 0 2px;font-weight:700;font-size:14px}
 .home-tile.admin-tile{border:2px dashed var(--warn);background:var(--warn-soft)}
 .team-row.locked{grid-template-columns:64px 1fr auto}
@@ -262,7 +273,7 @@ textarea{resize:vertical;min-height:90px}
 .bt-tile.final{opacity:.8}
 .bt-tile.empty{display:none}
 .bt-head{display:flex;align-items:baseline;gap:8px;min-width:0}
-.bt-label{flex:1;min-width:0;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bt-label{flex:1;min-width:0;font-weight:700;overflow-wrap:anywhere}
 .bt-clock{font-family:var(--font-display);font-weight:700;font-size:18px;font-variant-numeric:tabular-nums;white-space:nowrap}
 .bt-status{font-size:10px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;padding:2px 7px;border-radius:999px;background:var(--surface-2);color:var(--muted)}
 .bt-status.live{background:var(--t1);color:var(--on-team)}
@@ -273,7 +284,7 @@ textarea{resize:vertical;min-height:90px}
 .bt-row i{width:8px;height:26px;border-radius:3px;background:var(--team)}
 .bt-row.serving{background:var(--team-soft)}
 .bt-code{font-family:var(--font-display);font-weight:700;font-size:18px}
-.bt-names{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:14px;color:var(--muted)}
+.bt-names{min-width:0;overflow-wrap:anywhere;font-size:14px;color:var(--muted)}
 .bt-srv{font-size:11px;font-weight:700;padding:1px 6px;border-radius:999px;background:var(--ball);color:#1b2a22;min-width:0}
 .bt-srv:empty{background:none;padding:0}
 .bt-sc{font-family:var(--font-display);font-weight:700;font-size:34px;line-height:1;font-variant-numeric:tabular-nums;min-width:1.4em;text-align:right}
@@ -295,8 +306,8 @@ textarea{resize:vertical;min-height:90px}
   .bt-clock{font-size:clamp(20px,2vw,34px)}
   .bt-court{display:block;align-self:center;width:min(100%, calc((50vh - 150px) * 2.2));background:var(--court-out);border-radius:10px;
     box-shadow:0 0 0 clamp(8px,1vw,14px) var(--court-out)}
-  .bt-court .pl{max-width:30%}
-  .bt-court .pl-name{font-size:clamp(14px,1.4vw,24px)}
+  .bt-court .pl{max-width:40%}
+  .bt-court .pl-name{font-size:clamp(15px,1.5vw,26px)}
   .bt-rows{display:none}
   .bt-score{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);display:flex;gap:clamp(14px,2.4vw,40px);pointer-events:none}
   .bt-num{font-family:var(--font-display);font-weight:700;font-size:clamp(44px,6vw,110px);line-height:1;font-variant-numeric:tabular-nums;
@@ -344,7 +355,7 @@ body.viewing .bottombar{min-height:0}
 .team-list{display:flex;flex-direction:column}
 .team-row{display:grid;grid-template-columns:64px 1fr auto auto;gap:6px;align-items:center;padding:6px 0;border-bottom:1px solid var(--line)}
 .tr-code{font-family:var(--font-display);font-weight:700;font-size:17px}
-.tr-names{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tr-names{min-width:0;overflow-wrap:anywhere}
 .team-edit{display:flex;flex-direction:column;gap:8px;padding:8px 0;border-bottom:1px solid var(--line)}
 .sub-card{display:flex;flex-direction:column;gap:8px;padding-top:10px;border-top:1px dashed var(--line)}
 .sub-card h4{margin:0;font-size:13px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
@@ -475,6 +486,18 @@ body.viewing .bottombar{min-height:0}
         <label><input type="radio" name="mode" id="mdO" value="open"><span>Open play</span></label>
       </div>
     </fieldset>
+
+    <div class="card">
+      <fieldset class="seg big-seg court-seg">
+        <legend>Court</legend>
+        <div class="opts">
+          <label><input type="radio" name="court" id="ct1" value="1"><span>1<small data-court="1"></small></span></label>
+          <label><input type="radio" name="court" id="ct2" value="2"><span>2<small data-court="2"></small></span></label>
+          <label><input type="radio" name="court" id="ct3" value="3"><span>3<small data-court="3"></small></span></label>
+          <label><input type="radio" name="court" id="ct4" value="4"><span>4<small data-court="4"></small></span></label>
+        </div>
+      </fieldset>
+    </div>
 
     <div id="tourBlock" class="setup-block">
       <div class="card">
@@ -823,6 +846,31 @@ body.viewing .bottombar{min-height:0}
     return e;
   }
   function b(text){ return h("b", {text:text}); }
+
+  // "Marinelle De Guzman" -> first "Marinelle", last "De Guzman". Surname particles (de, dela, san…)
+  // and suffixes (Jr., III) stay with the last name so the whole surname shows on its own line.
+  var PARTICLES = {"de":1, "del":1, "dela":1, "della":1, "delos":1, "los":1, "la":1, "las":1, "san":1, "santa":1, "sto.":1, "sta.":1,
+                   "da":1, "dos":1, "das":1, "di":1, "van":1, "von":1, "mc":1};
+  var SUFFIXES = {"jr":1, "jr.":1, "sr":1, "sr.":1, "ii":1, "iii":1, "iv":1};
+  function splitName(full){
+    var w = String(full || "").trim().split(/\s+/).filter(Boolean);
+    if(w.length < 2) return {first:"", last:w[0] || ""};
+    var end = w.length - 1;
+    while(end > 1 && SUFFIXES[w[end].toLowerCase()]) end--;   // keep "Jr." with the surname
+    var start = end;
+    while(start > 1 && PARTICLES[w[start - 1].toLowerCase()]) start--;
+    return {first:w.slice(0, start).join(" "), last:w.slice(start).join(" ")};
+  }
+  // Two lines on court: small first name, larger last name. Nothing is cut off; long names wrap.
+  function fillName(el, full){
+    var n = splitName(full);
+    el.textContent = "";
+    if(n.first) el.appendChild(span(n.first, "pl-first"));
+    var longest = Math.max.apply(null, n.last.split(/[\s-]+/).map(function(w){ return w.length; }));
+    el.appendChild(span(n.last, "pl-last" + (longest > 10 ? " l2" : longest > 8 ? " l1" : "")));
+    el.title = full;
+    return el;
+  }
   function span(text, cls){ return h("span", {class:cls, text:text}); }
 
   /* ---------- sound (unlocked by the first tap) ---------- */
@@ -1142,6 +1190,7 @@ body.viewing .bottombar{min-height:0}
     $("timeLimit").value = DEF_TIME;
     $("selTeamA").value = ""; $("selTeamB").value = "";
     setRadio("baseA", "0"); setRadio("baseB", "0");
+    document.querySelectorAll('input[name="court"]').forEach(function(r){ r.checked = false; });
     $("settingsCard").open = false;
     clearToss();
     fillTourSetup();
@@ -1201,7 +1250,16 @@ body.viewing .bottombar{min-height:0}
     });
     return on;
   }
+  // Mark courts that have a live match on another phone.
+  function refreshCourts(){
+    var used = {};
+    (data().live || []).forEach(function(m){ if(m.court && m.device_id !== DEV) used[m.court] = m; });
+    document.querySelectorAll("[data-court]").forEach(function(s){
+      s.textContent = used[s.getAttribute("data-court")] ? "in use" : "";
+    });
+  }
   function fillTeams(){
+    refreshCourts();
     var teams = $("selCat").value ? teamsOf($("selCat").value) : [], busy = busyTeams(), onCourt = busyPlayers();
     ["selTeamA", "selTeamB"].forEach(function(id){
       fillSelect($(id), [option("", teams.length ? "Choose team" : "Choose a category first")].concat(teams.map(function(t){
@@ -1265,6 +1323,7 @@ body.viewing .bottombar{min-height:0}
     return !!msg;
   }
   function checkTeams(A, B){
+    if(!radio("court")) return setupError("Choose the court (1 to 4).");
     if(mode() === "tournament"){
       if(!$("selCat").value) return setupError("Choose a category.");
       if(A.missing || B.missing) return setupError("Choose both teams.");
@@ -1313,10 +1372,11 @@ body.viewing .bottombar{min-height:0}
       timeouts: TIMEOUTS,
       timeLimitMin: raw.timeLimitMin,
       startAt2: raw.startAt2,
-      team1Left: serveA === leftA
+      team1Left: serveA === leftA,
+      court: toInt(radio("court"), null)
     };
     var leftKey = leftA ? "A" : "B";
-    var startText = "Match started: " + label + " (" + phase().name + "). " +
+    var startText = "Match started on Court " + cfg.court + ": " + label + " (" + phase().name + "). " +
       "Baselines: " + A.label + " " + ordered(A)[0] + ", " + B.label + " " + ordered(B)[0] + ". " +
       T[keys[0]].label + " serves first, " + T[leftKey].label + " on the umpire's left. " +
       "Game to " + target + ", " + (raw.timeLimitMin ? raw.timeLimitMin + " min time limit" : "no time limit") +
@@ -1334,16 +1394,29 @@ body.viewing .bottombar{min-height:0}
     var btn = $("btnStart"), u = ump();
     btn.disabled = true; btn.textContent = "Checking teams…";
     G = game; var summary = matchSummary(); G = null;
-    function claim(allowBusyPlayers){
+    var notes = [];   // overrides the umpire accepted, recorded in the start log entry
+    function claim(){
       btn.disabled = true; btn.textContent = "Checking teams…";
-      if(allowBusyPlayers) summary.allow_busy_players = true;
       rpc("pb_start_match", {p_pass:u.pass, p_match:summary}).then(function(r){
-        if(r && r.ok){ begin(allowBusyPlayers ? "Started while " + allowBusyPlayers + " was on another court." : ""); return; }
+        if(r && r.ok){ begin(notes.join(" ")); return; }
+        if(r && r.reason === "court"){
+          // Usually a match someone forgot to end: warn, but let the umpire decide.
+          modal("Court " + r.court + " is in use", "The app shows " + (r.label || "another match") + " (umpire " + (r.umpire || "unknown") +
+            ") still live on Court " + r.court + ". If that match is over, start anyway.", [
+            {label:"Start anyway", cls:"primary", fn:function(){
+              summary.allow_busy_court = true; notes.push("Started while Court " + r.court + " still showed " + (r.label || "another match") + "."); claim();
+            }},
+            {label:"Choose another court"}
+          ]);
+          return;
+        }
         if(r && r.reason === "player"){
           // Same person on two teams: warn, but let the umpire decide.
           modal("Player already on court", r.players + " is playing right now in " + (r.label || "another match") +
             " (umpire " + (r.umpire || "unknown") + "). Start this match anyway?", [
-            {label:"Start anyway", cls:"primary", fn:function(){ claim(r.players); }},
+            {label:"Start anyway", cls:"primary", fn:function(){
+              summary.allow_busy_players = true; notes.push("Started while " + r.players + " was on another court."); claim();
+            }},
             {label:"Choose other teams"}
           ]);
           return;
@@ -1359,7 +1432,7 @@ body.viewing .bottombar{min-height:0}
         ]);
       }).then(function(){ btn.disabled = false; btn.textContent = "Start game"; });
     }
-    claim(false);
+    claim();
   });
 
   /* ---------- coin toss ---------- */
@@ -1532,7 +1605,7 @@ body.viewing .bottombar{min-height:0}
       score_a: s.score[a], score_b: s.score[bb],
       winner: s.over !== null ? c.keys[s.over] : (G.status !== "live" && s.score[a] !== s.score[bb] ? (s.score[a] > s.score[bb] ? "A" : "B") : null),
       target: c.target, time_limit_min: c.timeLimitMin, duration_ms: Math.round(shownElapsed()),
-      started_at: G.createdAt, ended_at: G.endedAt || null,
+      started_at: G.createdAt, ended_at: G.endedAt || null, court: G.cfg.court || null,
       device_id: G.device || DEV, state: snapshot()
     };
   }
@@ -1664,7 +1737,7 @@ body.viewing .bottombar{min-height:0}
   /* ================= RENDER ================= */
   function renderMatchLine(){
     var ml = $("matchLine"); ml.textContent = "";
-    ml.appendChild(span(G.cfg.label, "ml-label"));
+    ml.appendChild(span((G.cfg.court ? "Court " + G.cfg.court + " · " : "") + G.cfg.label, "ml-label"));
     if(viewing){
       var info = viewing.info || {}, ago = info.updated_at ? Math.max(0, Math.round((now() - new Date(info.updated_at).getTime()) / 1000)) : null;
       var st = info.status !== "live" ? "Finished" :
@@ -1686,7 +1759,7 @@ body.viewing .bottombar{min-height:0}
       for(var i = 0; i < 2; i++){
         var el = $("p" + t + i), p = pos(t, i);
         el.style.left = p.x + "%"; el.style.top = p.y + "%";
-        el.querySelector(".pl-name").textContent = name(t, i);
+        fillName(el.querySelector(".pl-name"), name(t, i));
         var isServer = s.serving === t && s.server === i;
         var isRecv = s.serving !== t && rcv === i;
         var tags = [];
@@ -1894,7 +1967,7 @@ body.viewing .bottombar{min-height:0}
       box.appendChild(h("div", {class:"res"}, [
         h("div", {class:"res-title", text:m.label || "Match"}),
         h("div", {class:"res-meta"}, [
-          span(shortDate(m.started_at)),
+          span((m.court ? "Court " + m.court + " · " : "") + shortDate(m.started_at)),
           span((m.duration_ms ? fmt(m.duration_ms) : "") + (m.umpire ? " · " + m.umpire : ""))
         ])
       ].concat(rows).concat([
@@ -2037,7 +2110,7 @@ body.viewing .bottombar{min-height:0}
     $("goAdminSet").hidden = !admin;
     $("goResume").hidden = !mine;
     $("goCreate").hidden = !!mine;   // one match per phone at a time
-    if(mine) $("resumeLabel").textContent = G.cfg.label + " · " + callText().replace(/-/g, " – ");
+    if(mine) $("resumeLabel").textContent = (G.cfg.court ? "Court " + G.cfg.court + " · " : "") + G.cfg.label + " · " + callText().replace(/-/g, " – ");
     updateSyncLine();
   }
 
@@ -2198,13 +2271,29 @@ body.viewing .bottombar{min-height:0}
   }
   // Run the scoring helpers (which read G) against another match's state.
   function withGame(g, fn){ var keep = G; G = g; try{ return fn(); } finally{ G = keep; } }
+  // Matches with a court number go on that court's tile. If two claim one court, the live one wins,
+  // then the newest. Matches without a court (older ones) fill whatever tiles are left.
   function assignSlots(){
+    var used = {}, best = {};
+    board.list.forEach(function(m){
+      var c = toInt(m.court, 0); if(c < 1 || c > BOARD_SLOTS) return;
+      var cur = best[c];
+      var better = !cur || (m.status === "live") > (cur.status === "live") ||
+        ((m.status === "live") === (cur.status === "live") && (m.started_at || "") > (cur.started_at || ""));
+      if(better) best[c] = m;
+    });
+    Object.keys(best).forEach(function(c){ used[c - 1] = best[c].id; });
+    var rest = board.list.filter(function(m){ var c = toInt(m.court, 0); return c < 1 || c > BOARD_SLOTS; });
+    return assignLooseSlots(rest, used);
+  }
+  function assignLooseSlots(list, taken){
     var ids = {}, used = {}, slots = board.slots;
-    board.list.forEach(function(m){ ids[m.id] = m; });
-    Object.keys(slots).forEach(function(id){ if(!ids[id]) delete slots[id]; else used[slots[id]] = id; });
+    Object.keys(taken).forEach(function(i){ used[i] = taken[i]; });
+    list.forEach(function(m){ ids[m.id] = m; });
+    Object.keys(slots).forEach(function(id){ if(!ids[id] || used[slots[id]]) delete slots[id]; else used[slots[id]] = id; });
     function free(){ for(var i = 0; i < BOARD_SLOTS; i++) if(!used[i]) return i; return -1; }
     // Live matches first; a live match may take the tile of a finished one.
-    board.list.filter(function(m){ return m.status === "live" && slots[m.id] == null; }).forEach(function(m){
+    list.filter(function(m){ return m.status === "live" && slots[m.id] == null; }).forEach(function(m){
       var i = free();
       if(i < 0){
         var fin = Object.keys(slots).filter(function(id){ return ids[id].status !== "live"; })[0];
@@ -2213,7 +2302,7 @@ body.viewing .bottombar{min-height:0}
       }
       slots[m.id] = i; used[i] = m.id;
     });
-    board.list.filter(function(m){ return m.status !== "live" && slots[m.id] == null; }).forEach(function(m){
+    list.filter(function(m){ return m.status !== "live" && slots[m.id] == null; }).forEach(function(m){
       var i = free(); if(i >= 0){ slots[m.id] = i; used[i] = m.id; }
     });
     return used;
@@ -2245,7 +2334,7 @@ body.viewing .bottombar{min-height:0}
       for(var t = 0; t < 2; t++) for(var i = 0; i < 2; i++){
         var p = pos(t, i), isServer = !over && s.serving === t && s.server === i, isRecv = !over && s.serving !== t && rcv === i;
         court.appendChild(h("div", {class:"pl t-" + col(t) + (isServer ? " is-server" : "") + (isRecv ? " is-receiver" : ""), style:"left:" + p.x + "%;top:" + p.y + "%"}, [
-          span(name(t, i), "pl-name"), isServer ? span("S" + s.serverNum, "pl-tags") : null
+          fillName(span("", "pl-name"), name(t, i)), isServer ? span("S" + s.serverNum, "pl-tags") : null
         ]));
       }
       // the two team scores in the middle, each on its team's side of the net
@@ -2263,6 +2352,7 @@ body.viewing .bottombar{min-height:0}
       var status = over ? "Final" : (G.to.active ? "Timeout" : "Live");
       return h("button", {type:"button", class:"bt-tile" + (over ? " final" : ""), onclick:function(){ if(live) watch(m); }}, [
         h("div", {class:"bt-head"}, [
+          m.court ? span("Court " + m.court, "bt-court-no") : null,
           span(m.label || G.cfg.label, "bt-label"),
           span(boardClock(g, live), "bt-clock", null), span(status, "bt-status " + status.toLowerCase())
         ]),
