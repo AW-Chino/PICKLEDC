@@ -281,6 +281,37 @@ textarea{resize:vertical;min-height:90px}
 .bt-status.live{background:var(--t1);color:var(--on-team)}
 .bt-status.timeout{background:var(--warn-soft);color:var(--warn)}
 .bt-status.over{background:var(--fg);color:var(--bg)}
+/* small, quiet "SERVER 2" under the server's name on the live board */
+.pl-tags.pl-srv{font-size:clamp(9px,.75vw,14px);font-weight:600;letter-spacing:.14em;text-transform:uppercase;opacity:.75;margin-top:2px}
+.bt-srv{text-transform:uppercase;letter-spacing:.06em}
+/* history window */
+.overlay.hist-ov{align-items:center}
+.hist-sheet{max-width:960px;max-height:calc(100% - 8px);overflow-y:auto;gap:10px}
+.hist-head{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.hist-tabs{display:flex;gap:6px;overflow-x:auto;padding-bottom:4px;flex:none}
+.hist-tab{flex:none;padding:8px 12px;border-radius:999px;border:1px solid var(--line);background:var(--surface-2);font-weight:600;font-size:14px;white-space:nowrap}
+.hist-tab.on{background:var(--fg);color:var(--bg);border-color:var(--fg)}
+.hist-scroll{overflow-x:auto}
+.hist-table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums;font-size:14px}
+.hist-table th{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);text-align:center;padding:6px;border-bottom:1px solid var(--line)}
+.hist-table td{text-align:center;padding:8px 6px;border-bottom:1px solid var(--line)}
+.hist-table .tl{text-align:left;min-width:150px}
+.th-short{display:none}
+@media (max-width:600px){
+  .th-full{display:none} .th-short{display:inline}
+  .hist-table{font-size:13px}
+  .hist-table th,.hist-table td{padding:7px 3px}
+  .hist-table .tl{min-width:0}
+}
+.hist-table td.w{font-weight:700}
+.hist-table td:not(.tl){white-space:nowrap}
+.hist-table tr.none td{color:var(--muted)}
+.hist-sub{margin:6px 0 0;font-size:13px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.hist-game{display:flex;flex-direction:column;gap:2px;padding:8px 0;border-bottom:1px solid var(--line)}
+.hg-score{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.hg-score .win{font-weight:700}
+.hg-num{font-family:var(--font-display);font-weight:700;font-size:22px}
+.hg-meta{display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:12px;color:var(--muted)}
 .bt-court{display:none}
 .bt-rows{display:flex;flex-direction:column;gap:4px}
 .bt-row{display:grid;grid-template-columns:8px 1fr auto auto;gap:8px;align-items:center;padding:6px 8px;border-radius:9px}
@@ -467,6 +498,7 @@ body.viewing .bottombar{min-height:0}
   <header class="board-head">
     <div class="board-title"><b id="boardTitle">Live scores</b><span id="boardSub"></span></div>
     <div class="head-btns">
+      <button type="button" class="btn" id="btnHistory">History</button>
       <button type="button" class="btn" id="btnFull">Full screen</button>
       <button type="button" class="btn" id="btnBoardBack">Back</button>
     </div>
@@ -767,6 +799,17 @@ body.viewing .bottombar{min-height:0}
       <button type="button" class="btn primary" id="btnToEnd">End timeout</button>
       <button type="button" class="btn ghost" id="btnToCancel">Cancel, tapped by mistake</button>
     </div>
+  </div>
+</div>
+
+<div class="overlay hist-ov" id="ovHistory" hidden>
+  <div class="sheet hist-sheet" role="dialog" aria-labelledby="histTitle">
+    <div class="hist-head">
+      <h3 id="histTitle">History</h3>
+      <button type="button" class="btn" id="btnHistClose">Close</button>
+    </div>
+    <div class="hist-tabs" id="histTabs" role="tablist"></div>
+    <div class="hist-body" id="histBody"></div>
   </div>
 </div>
 
@@ -2370,7 +2413,7 @@ body.viewing .bottombar{min-height:0}
       for(var t = 0; t < 2; t++) for(var i = 0; i < 2; i++){
         var p = pos(t, i), isServer = !over && s.serving === t && s.server === i, isRecv = !over && s.serving !== t && rcv === i;
         court.appendChild(h("div", {class:"pl t-" + col(t) + (isServer ? " is-server" : "") + (isRecv ? " is-receiver" : ""), style:"left:" + p.x + "%;top:" + p.y + "%"}, [
-          fillName(span("", "pl-name"), name(t, i)), isServer ? span("S" + s.serverNum, "pl-tags") : null
+          fillName(span("", "pl-name"), name(t, i)), isServer ? span("Server " + s.serverNum, "pl-tags pl-srv") : null
         ]));
       }
       // the two team scores in the middle, each on its team's side of the net
@@ -2382,7 +2425,7 @@ body.viewing .bottombar{min-height:0}
         var serving = !over && s.serving === t;
         return h("div", {class:"bt-row t-" + col(t) + (serving ? " serving" : "") + (s.over === t ? " won" : "")}, [
           h("i"), span(name(t, 0) + " / " + name(t, 1), "bt-names"),
-          serving ? span("S" + s.serverNum, "bt-srv") : span("", "bt-srv"), span(String(s.score[t]), "bt-sc")
+          serving ? span("Server " + s.serverNum, "bt-srv") : span("", "bt-srv"), span(String(s.score[t]), "bt-sc")
         ]);
       }));
       var status = over ? "Game over" : (G.to.active ? "Timeout" : "Live");
@@ -2426,6 +2469,91 @@ body.viewing .bottombar{min-height:0}
       var x = board.games[c.getAttribute("data-id")]; if(x) c.textContent = boardClock(x.g, x.live);
     });
   }, 1000);
+  /* ---------- history: standings and game scores per category ---------- */
+  var hist = {cat:null, list:null, error:false, timer:0};
+  function openHistory(){
+    $("ovHistory").hidden = false;
+    renderHistory();
+    loadHistory();
+    clearInterval(hist.timer);
+    hist.timer = setInterval(function(){ if($("ovHistory").hidden){ clearInterval(hist.timer); return; } loadHistory(); }, 15000);
+  }
+  function loadHistory(){
+    var u = ump(); if(!u) return;
+    rpc("pb_matches", {p_pass:u.pass}).then(function(l){ hist.list = l || []; hist.error = false; })
+      .catch(function(){ hist.error = true; }).then(renderHistory);
+  }
+  // Header with a full label on wide screens and a short one on phones.
+  function th2(full, short){ return h("th", {title:full}, [span(full, "th-full"), span(short, "th-short")]); }
+  function sideName(m, k){
+    var p = (m.players && m.players[k]) || {};
+    return p.label || initialName(p.p1 || "") || ("Team " + k);
+  }
+  function renderHistory(){
+    var tour = curTour(), cats = tour ? catsOf(tour.id) : [];
+    if(!cats.some(function(c){ return c.id === hist.cat; })) hist.cat = cats[0] ? cats[0].id : null;
+    var tabs = $("histTabs"); tabs.textContent = "";
+    cats.forEach(function(c){
+      tabs.appendChild(h("button", {type:"button", role:"tab", "aria-selected":String(c.id === hist.cat), class:"hist-tab" + (c.id === hist.cat ? " on" : ""), text:c.name,
+        onclick:function(){ hist.cat = c.id; renderHistory(); }}));
+    });
+    var body = $("histBody"); body.textContent = "";
+    if(!hist.cat){ body.appendChild(h("p", {class:"hint", text:"No categories yet."})); return; }
+    if(!hist.list){ body.appendChild(h("p", {class:"hint", text:hist.error ? "Can't load the history. Check your internet." : "Loading…"})); return; }
+
+    var cat = findCat(hist.cat), teams = teamsOf(cat.id), rows = {};
+    teams.forEach(function(t){ rows[t.id] = {t:t, g:0, w:0, l:0, pf:0, pa:0}; });
+    var games = hist.list.filter(function(m){ return m.category_id === cat.id && (m.status === "final" || m.status === "ended_early"); })
+      .sort(function(x, y){ return (y.ended_at || y.started_at || "").localeCompare(x.ended_at || x.started_at || ""); });
+    // Only completed games count toward the standings.
+    games.forEach(function(m){
+      if(m.status !== "final") return;
+      [["A", m.team_a, m.score_a, m.score_b], ["B", m.team_b, m.score_b, m.score_a]].forEach(function(x){
+        var r = rows[x[1]]; if(!r) return;
+        r.g++; r.pf += x[2]; r.pa += x[3];
+        if(m.winner === x[0]) r.w++; else if(m.winner) r.l++;
+      });
+    });
+    var list = Object.keys(rows).map(function(k){ return rows[k]; }).sort(function(a, b){
+      return b.w - a.w || (b.pf - b.pa) - (a.pf - a.pa) || b.pf - a.pf || a.t.player1.localeCompare(b.t.player1);
+    });
+
+    var tbl = h("table", {class:"hist-table"}, [
+      h("thead", null, [h("tr", null, [
+        h("th", {text:"#"}), h("th", {class:"tl", text:"Team"}), th2("Games", "G"), th2("Win", "W"), th2("Lose", "L"),
+        th2("Points", "Pts"), h("th", {text:"+/−"})
+      ])]),
+      h("tbody", null, list.map(function(r, i){
+        var diff = r.pf - r.pa;
+        return h("tr", {class:r.g ? "" : "none"}, [
+          h("td", {text:String(i + 1)}),
+          h("td", {class:"tl"}, [span(r.t.player1 + " / " + r.t.player2)]),
+          h("td", {text:String(r.g)}), h("td", {class:"w", text:String(r.w)}), h("td", {text:String(r.l)}),
+          h("td", {text:r.pf + " – " + r.pa}), h("td", {text:(diff > 0 ? "+" : "") + diff})
+        ]);
+      }))
+    ]);
+    body.appendChild(h("div", {class:"hist-scroll"}, [tbl]));
+    var on = tabs.querySelector(".on"); if(on && on.scrollIntoView) on.scrollIntoView({block:"nearest", inline:"nearest"});
+
+    body.appendChild(h("h4", {class:"hist-sub", text:"Games (" + games.length + ")"}));
+    if(!games.length) body.appendChild(h("p", {class:"hint", text:"No finished games in this category yet."}));
+    games.forEach(function(m){
+      var a = sideName(m, "A"), bb = sideName(m, "B");
+      body.appendChild(h("div", {class:"hist-game"}, [
+        h("div", {class:"hg-score"}, [
+          span(a, m.winner === "A" ? "win" : ""), span(m.score_a + " – " + m.score_b, "hg-num"), span(bb, m.winner === "B" ? "win" : "")
+        ]),
+        h("div", {class:"hg-meta"}, [
+          span((m.court ? "Court " + m.court + " · " : "") + shortDate(m.ended_at || m.started_at) + (m.duration_ms ? " · " + fmt(m.duration_ms) : "") + (m.umpire ? " · " + m.umpire : "")),
+          m.status === "ended_early" ? span("Ended early, not counted", "chip") : null
+        ])
+      ]));
+    });
+  }
+  $("btnHistory").addEventListener("click", openHistory);
+  $("btnHistClose").addEventListener("click", function(){ $("ovHistory").hidden = true; clearInterval(hist.timer); });
+
   $("btnFull").addEventListener("click", function(){
     try{
       if(document.fullscreenElement) document.exitFullscreen();
