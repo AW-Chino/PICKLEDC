@@ -1309,13 +1309,27 @@ body.viewing .bottombar{min-height:0}
       s.textContent = used[s.getAttribute("data-court")] ? "in use" : "";
     });
   }
+  // Same person, ignoring capitals and extra spaces.
+  function samePerson(a, b){
+    var n = function(x){ return String(x || "").trim().replace(/\s+/g, " ").toLowerCase(); };
+    return !!n(a) && n(a) === n(b);
+  }
+  // True when the two teams are the same team or have a player in common.
+  function overlap(t, u){
+    if(!t || !u) return false;
+    if(t.id && t.id === u.id) return true;
+    return [t.player1, t.player2].some(function(x){ return samePerson(x, u.player1) || samePerson(x, u.player2); });
+  }
   function fillTeams(){
     refreshCourts();
     var teams = $("selCat").value ? teamsOf($("selCat").value) : [], busy = busyTeams(), onCourt = busyPlayers();
+    var picked = {selTeamA:findTeam($("selTeamA").value), selTeamB:findTeam($("selTeamB").value)};
     ["selTeamA", "selTeamB"].forEach(function(id){
+      var otherSide = picked[id === "selTeamA" ? "selTeamB" : "selTeamA"];
       fillSelect($(id), [option("", teams.length ? "Choose team" : "Choose a category first")].concat(teams.map(function(t){
         var o = option(t.id, t.player1 + " / " + t.player2);
         if(busy[t.id]){ o.disabled = true; o.textContent += " (in a match, " + busy[t.id].umpire + ")"; }
+        else if(overlap(t, otherSide)){ o.disabled = true; o.textContent += " (on the other side)"; }
         else{
           var playing = [t.player1, t.player2].filter(function(n){ return onCourt[n.trim().toLowerCase()]; });
           if(playing.length) o.textContent += " (" + playing.join(" & ") + " on court)";
@@ -1334,7 +1348,8 @@ body.viewing .bottombar{min-height:0}
     r.addEventListener("change", function(){ clearToss(); refreshLabels(); });
   });
   ["selTeamA", "selTeamB"].forEach(function(id){
-    $(id).addEventListener("change", function(){ clearToss(); setRadio(id === "selTeamA" ? "baseA" : "baseB", "0"); refreshLabels(); });
+    // Re-filling also greys out this team (and teams sharing a player) on the other side.
+    $(id).addEventListener("change", function(){ clearToss(); setRadio(id === "selTeamA" ? "baseA" : "baseB", "0"); fillTeams(); });
   });
   ["t1a", "t1b", "t2a", "t2b"].forEach(function(id){ $(id).addEventListener("input", refreshLabels); });
 
@@ -1401,12 +1416,16 @@ body.viewing .bottombar{min-height:0}
       if(!$("selCat").value) return setupError("Choose a category.");
       if(A.missing || B.missing) return setupError("Choose both teams.");
       if(A.id === B.id) return setupError("Team A and Team B are the same team. Choose two different teams.");
-      return setupError("");
+    }else{
+      var m = [];
+      if(!A.p[0]) m.push("Team A player 1"); if(!A.p[1]) m.push("Team A player 2");
+      if(!B.p[0]) m.push("Team B player 1"); if(!B.p[1]) m.push("Team B player 2");
+      if(m.length) return setupError("Add a name for: " + m.join(", ") + ".");
     }
-    var m = [];
-    if(!A.p[0]) m.push("Team A player 1"); if(!A.p[1]) m.push("Team A player 2");
-    if(!B.p[0]) m.push("Team B player 1"); if(!B.p[1]) m.push("Team B player 2");
-    return setupError(m.length ? "Add a name for: " + m.join(", ") + "." : "");
+    // Nobody may appear twice in one match: not on both teams, not twice on one team.
+    var all = A.p.concat(B.p), dup = all.filter(function(n, i){ return all.some(function(x, j){ return j < i && samePerson(x, n); }); })[0];
+    if(dup) return setupError(dup + " is picked twice. Each player can only be in one spot in a match.");
+    return setupError("");
   }
 
   $("setupForm").addEventListener("submit", function(e){
@@ -2307,6 +2326,7 @@ body.viewing .bottombar{min-height:0}
     var cat = findCat($("atCat").value), p1 = $("atP1").value.trim(), p2 = $("atP2").value.trim(), err = $("atErr");
     if(!cat){ err.textContent = "Choose a category."; err.hidden = false; return; }
     if(!p1 || !p2){ err.textContent = "Enter both players."; err.hidden = false; return; }
+    if(samePerson(p1, p2)){ err.textContent = "Player 1 and Player 2 are the same person. Enter two different players."; err.hidden = false; return; }
     var dup = teamsOf(cat.id).filter(function(t){
       return [t.player1, t.player2].map(function(x){ return x.toLowerCase(); }).sort().join("|") === [p1, p2].map(function(x){ return x.toLowerCase(); }).sort().join("|");
     })[0];
@@ -2687,7 +2707,8 @@ body.viewing .bottombar{min-height:0}
           h("div", {class:"btn-pair"}, [
             h("button", {type:"button", class:"btn primary", text:"Save", onclick:function(e){
               var p1 = val("edP1"), p2 = val("edP2"), code = isAdmin() ? val("edCode").toUpperCase() : t.code, catId = $("edCat").value || cat.id;
-              if(!p1 || !p2 || !code){ toast("Fill in the code and both players"); return; }
+              if(!p1 || !p2 || !code){ toast(isAdmin() ? "Fill in the code and both players" : "Fill in both players"); return; }
+              if(samePerson(p1, p2)){ toast("Player 1 and Player 2 are the same person"); return; }
               // Moving to another category: give it the next code there unless the code was changed by hand.
               if(catId !== cat.id && code === t.code.toUpperCase()) code = nextTeamCode(findCat(catId));
               adminCall(e.target, "pb_save", {p_kind:"team", p_row:{id:t.id, category_id:catId, code:code, player1:p1, player2:p2}}).then(function(){
@@ -2725,6 +2746,7 @@ body.viewing .bottombar{min-height:0}
       h("button", {type:"button", class:"btn primary", text:"Add team", onclick:function(e){
         var p1 = val(pre + "p1"), p2 = val(pre + "p2");
         if(!p1 || !p2){ toast("Enter both players"); return; }
+        if(samePerson(p1, p2)){ toast("Player 1 and Player 2 are the same person"); return; }
         adminCall(e.target, "pb_save", {p_kind:"team", p_row:{category_id:cat.id, code:nextTeamCode(cat), player1:p1, player2:p2}}, "Team added");
       }})
     ]));
@@ -2739,9 +2761,9 @@ body.viewing .bottombar{min-height:0}
         var rows = [], bad = [];
         lines.forEach(function(l){
           var p = l.split(/\s*[,\t;]\s*|\s+\/\s+/).filter(Boolean);
-          if(p.length >= 2) rows.push([p[0], p[1]]); else bad.push(l);
+          if(p.length >= 2 && !samePerson(p[0], p[1])) rows.push([p[0], p[1]]); else bad.push(l);
         });
-        if(bad.length){ toast("Each line needs two names separated by a comma: " + bad[0]); return; }
+        if(bad.length){ toast("Each line needs two different names separated by a comma: " + bad[0]); return; }
         if(!rows.length) return;
         var btn = e.target, u = ump(), start = nextTeamCode(cat), tag = isAdmin() ? "" : "T";
         var n = toInt(start.split("-").pop().replace(/\D/g, ""), 1);
