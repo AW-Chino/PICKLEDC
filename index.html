@@ -865,13 +865,21 @@ body.viewing .bottombar{min-height:0}
     var ss = (x < 10 ? "0" : "") + x;
     return h ? h + ":" + (m < 10 ? "0" : "") + m + ":" + ss : m + ":" + ss;
   }
+  // Everything is shown in Philippine time (UTC+8, no daylight saving), whatever the device is set to.
+  var PH_TZ = "Asia/Manila", PH_OFFSET_MS = 8 * 3600000;
+  function phFormat(d, opts){
+    try{ return d.toLocaleString("en-US", Object.assign({timeZone:PH_TZ}, opts)); }
+    catch(e){   // very old browsers without time zone support: shift by +8h and format as UTC
+      return new Date(d.getTime() + PH_OFFSET_MS).toLocaleString("en-US", Object.assign({timeZone:"UTC"}, opts));
+    }
+  }
   function clockTime(iso){
     var d = new Date(iso);
-    return isNaN(d) ? "" : d.toLocaleTimeString([], {hour:"numeric", minute:"2-digit", second:"2-digit"});
+    return isNaN(d) ? "" : phFormat(d, {hour:"numeric", minute:"2-digit", second:"2-digit"});
   }
   function shortDate(iso){
     var d = new Date(iso);
-    return isNaN(d) ? "" : d.toLocaleString([], {month:"short", day:"numeric", hour:"numeric", minute:"2-digit"});
+    return isNaN(d) ? "" : phFormat(d, {month:"short", day:"numeric", hour:"numeric", minute:"2-digit"});
   }
   function vibrate(p){ try{ if(navigator.vibrate) navigator.vibrate(p); }catch(e){} }
   function uid(){ return now().toString(36) + Math.random().toString(36).slice(2, 7); }
@@ -1034,9 +1042,9 @@ body.viewing .bottombar{min-height:0}
     {name:"Live Practice",  from:"2026-10-11", to:"2026-10-17", note:"Umpires practice and can add their own players."},
     {name:"Tournament Day", from:"2026-10-18", to:"9999-12-31", note:"October 18. Matches and logs cleared; official teams only."}
   ];
+  // Today's date in the Philippines (YYYY-MM-DD), not the device's own time zone.
   function todayStr(){
-    var d = new Date(), p = function(n){ return (n < 10 ? "0" : "") + n; };
-    return d.getFullYear() + "-" + p(d.getMonth() + 1) + "-" + p(d.getDate());
+    return new Date(Date.now() + PH_OFFSET_MS).toISOString().slice(0, 10);
   }
   function phase(){ var t = todayStr(); return PHASES.filter(function(p){ return t >= p.from && t <= p.to; })[0] || PHASES[0]; }
   function tourTitle(){ var tour = curTour(); return (tour ? tour.name : "Tournament") + " · " + phase().name; }
@@ -2240,7 +2248,7 @@ body.viewing .bottombar{min-height:0}
         var range = p.from === "0000-01-01" ? "Until Oct 9" : (p.from === p.to ? "Oct " + +p.from.slice(8) : "Oct " + +p.from.slice(8) + (p.to.indexOf("9999") === 0 ? " onward" : "–" + +p.to.slice(8)));
         return h("li", {class:p === cur ? "now" : ""}, [b(p.name), span(range, "ph-range"), h("div", {class:"hint", text:p.note})]);
       })),
-      h("p", {class:"hint", text:"Phases follow each phone's date. Umpires can't change the tournament or categories."})
+      h("p", {class:"hint", text:"Phases follow the date in the Philippines (PHT), whatever time zone a phone or laptop is set to. Umpires can't change the tournament or categories."})
     ]));
 
     // original players
